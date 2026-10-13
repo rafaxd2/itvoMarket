@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/ProductoController.php';
+require_once __DIR__ . '/../controllers/UbicacionController.php';
+
+$controlador = new AuthController();
+$accion = $_GET['accion'] ?? 'login';
+
+$accionesPublicas = ['login', 'registro', 'procesarLogin', 'procesarRegistro', 'logout'];
+if (!in_array($accion, $accionesPublicas, true)) {
+    AuthController::requerirSesion();
+}
+
+switch ($accion) {
+    case 'registro':
+        $controlador->mostrarRegistro();
+        break;
+    case 'procesarRegistro':
+        $controlador->registrar();
+        break;
+    case 'login':
+        $controlador->mostrarLogin();
+        break;
+    case 'procesarLogin':
+        $controlador->login();
+        break;
+    case 'logout':
+        $controlador->cerrarSesion();
+        break;
+    case 'publicar':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new ProductoController())->mostrarFormulario();
+        break;
+    case 'procesarPublicacion':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new ProductoController())->publicar();
+        break;
+    case 'ubicacion':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new UbicacionController())->mostrarFormulario();
+        break;
+    case 'guardarUbicacion':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new UbicacionController())->guardar();
+        break;
+    case 'mapa':
+        header('Location: panel.php?rol=comprador');
+        exit;
+        break;
+    case 'cambiarRol':
+        $controlador->cambiarRol();
+        break;
+    default:
+        $controlador->mostrarLogin();
+        break;
+}

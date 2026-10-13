@@ -1,0 +1,170 @@
+.auth-page {
+    position: relative;
+    overflow-x: hidden;
+}
+
+.auth-floating-decor {
+    position: fixed;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.auth-layout {
+    position: relative;
+    z-index: 1;
+}
+
+.auth-floating-anchor {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+}
+
+.auth-floating-anchor::before {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 10px 24px rgba(31, 42, 36, 0.14);
+    content: '';
+}
+
+.auth-floating-bubble {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow:
+        inset 0 2px 3px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 6px rgba(31, 42, 36, 0.05);
+    font-size: 29px;
+    animation: auth-bubble-float 5s ease-in-out infinite;
+}
+
+.auth-floating-bubble--green {
+    color: #2E7D5B;
+}
+
+.auth-floating-bubble--orange {
+    color: #F4A259;
+}
+
+.auth-floating-bubble--one {
+    top: 18%;
+    left: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--two {
+    top: 29%;
+    right: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--three {
+    top: 43%;
+    left: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--four {
+    top: 54%;
+    right: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--five {
+    top: 70%;
+    left: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--six {
+    top: 78%;
+    right: max(18px, calc(50% - 544px));
+}
+
+.auth-floating-bubble--one .auth-floating-bubble {
+    animation-duration: 5s;
+    animation-delay: -1.1s;
+}
+
+.auth-floating-bubble--two .auth-floating-bubble {
+    animation-duration: 5.4s;
+    animation-delay: -2.4s;
+}
+
+.auth-floating-bubble--three .auth-floating-bubble {
+    animation-duration: 5.8s;
+    animation-delay: -0.7s;
+}
+
+.auth-floating-bubble--four .auth-floating-bubble {
+    animation-duration: 6.2s;
+    animation-delay: -3.1s;
+}
+
+.auth-floating-bubble--five .auth-floating-bubble {
+    animation-duration: 6.6s;
+    animation-delay: -1.8s;
+}
+
+.auth-floating-bubble--six .auth-floating-bubble {
+    animation-duration: 7s;
+    animation-delay: -4s;
+}
+
+@keyframes auth-bubble-float {
+    0%,
+    100% {
+        transform: translateY(0) rotate(-4deg);
+    }
+    50% {
+        transform: translateY(-14px) rotate(4deg);
+    }
+}
+
+@media (max-width: 859.98px) {
+    .auth-floating-bubble--three,
+    .auth-floating-bubble--four,
+    .auth-floating-bubble--five,
+    .auth-floating-bubble--six {
+        display: none;
+    }
+
+    .auth-floating-bubble--one {
+        top: 15%;
+        left: 4%;
+    }
+
+    .auth-floating-bubble--two {
+        top: 15%;
+        right: 4%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-floating-anchor {
+        width: 56px;
+        height: 56px;
+    }
+
+    .auth-floating-bubble {
+        font-size: 25px;
+    }
+
+    .auth-floating-bubble--one {
+        top: 11%;
+        left: 4%;
+    }
+
+    .auth-floating-bubble--two {
+        top: 11%;
+        right: 4%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-floating-bubble {
+        animation: none;
+    }
+}

@@ -1,0 +1,4 @@
+.env
+AGENTS.md
+docs/
+tests/.phpunit.cache/
