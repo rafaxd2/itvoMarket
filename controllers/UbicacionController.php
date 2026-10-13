@@ -14,10 +14,12 @@ class UbicacionController
         AuthController::requerirSesion();
         AuthController::requerirRol('vendedor');
 
-        $latitud = $contexto['latitud'] ?? '';
-        $longitud = $contexto['longitud'] ?? '';
-        $referencia = $contexto['referencia'] ?? '';
-        $estadoZona = $contexto['estado_zona'] ?? 'Activo';
+        $zonaGuardada = ZonaVenta::obtenerPorVendedor($this->obtenerIdVendedorActual());
+        $latitud = $contexto['latitud'] ?? $zonaGuardada['latitud'] ?? '';
+        $longitud = $contexto['longitud'] ?? $zonaGuardada['longitud'] ?? '';
+        $referencia = $contexto['referencia'] ?? $zonaGuardada['punto_referencia'] ?? '';
+        $estadoZona = $contexto['estado_zona'] ?? $zonaGuardada['estado_zona'] ?? 'Activo';
+        $ultimaActualizacion = $contexto['ultima_actualizacion'] ?? $zonaGuardada['fecha_hora'] ?? '';
         $mensaje = $contexto['mensaje'] ?? '';
         $errores = $contexto['errores'] ?? [];
         $googleMapsApiKey = obtenerValorEntorno('GOOGLE_MAPS_API_KEY', '');

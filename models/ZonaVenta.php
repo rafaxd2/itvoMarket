@@ -59,6 +59,19 @@ class ZonaVenta
         return $consulta->fetchAll();
     }
 
+    // Devuelve la última ubicación guardada por un vendedor, sin importar si está activa.
+    public static function obtenerPorVendedor(int $idVendedor): ?array
+    {
+        $conexion = obtenerConexionBaseDatos();
+        $consulta = $conexion->prepare(
+            'SELECT * FROM zona_venta WHERE id_vendedor = :id_vendedor LIMIT 1'
+        );
+        $consulta->execute([':id_vendedor' => $idVendedor]);
+        $zona = $consulta->fetch();
+
+        return $zona !== false ? $zona : null;
+    }
+
     // Normaliza los datos de ubicación para aceptar arreglo o argumentos separados.
     private static function normalizarDatosZona(array $argumentos): array
     {

@@ -63,7 +63,7 @@
                             </div>
                         </div>
 
-                        <div class="small text-muted">Última actualización: <span id="ultimaActualizacion">-</span></div>
+                        <div class="small text-muted">Última actualización: <span id="ultimaActualizacion"><?= htmlspecialchars((string) $ultimaActualizacion, ENT_QUOTES, 'UTF-8') ?: '-'; ?></span></div>
                     </div>
                 </div>
             </div>

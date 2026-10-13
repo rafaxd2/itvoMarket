@@ -65,4 +65,24 @@ final class ZonaVentaTest extends ModeloTestCase
         self::assertSame('Activo', $zonasActivas[0]['estado_zona']);
         self::assertSame(1, (int) $zonasActivas[0]['id_vendedor']);
     }
+
+    public function testObtenerPorVendedorDevuelveUltimaUbicacionAunqueEsteInactiva(): void
+    {
+        $this->conexion->exec(
+            "INSERT INTO zona_venta (id_vendedor, latitud, longitud, punto_referencia, estado_zona, fecha_hora)
+             VALUES (1, 17.0622, -96.7266, 'Frente al teatro', 'Desactivo', '2026-10-12 10:00:00')"
+        );
+
+        $zona = ZonaVenta::obtenerPorVendedor(1);
+
+        self::assertNotNull($zona);
+        self::assertSame('Frente al teatro', $zona['punto_referencia']);
+        self::assertSame('Desactivo', $zona['estado_zona']);
+        self::assertSame(17.0622, (float) $zona['latitud']);
+    }
+
+    public function testObtenerPorVendedorDevuelveNuloSiNoTieneUbicacion(): void
+    {
+        self::assertNull(ZonaVenta::obtenerPorVendedor(1));
+    }
 }
