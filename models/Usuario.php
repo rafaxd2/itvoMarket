@@ -34,6 +34,12 @@ class Usuario
             throw new InvalidArgumentException('El correo electrónico no es válido.');
         }
 
+        $posicionArroba = strrpos($datos['correo'], '@');
+        $dominioCorreo = substr($datos['correo'], $posicionArroba + 1);
+        if ($dominioCorreo !== 'gmail.com') {
+            throw new InvalidArgumentException('El correo electrónico debe pertenecer a @gmail.com.');
+        }
+
         if (!in_array($datos['rol'], ['Comprador', 'Vendedor'], true)) {
             throw new InvalidArgumentException('El rol seleccionado no es válido.');
         }

@@ -37,9 +37,11 @@
                             name="correo"
                             type="email"
                             class="form-control clay-input <?= !empty($errores['correo']) ? 'is-invalid' : '' ?> <?= !empty($errores['general']) ? 'is-invalid' : '' ?>"
+                            placeholder="usuario@gmail.com"
                             value="<?= htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?>"
                             aria-invalid="<?= !empty($errores['correo']) || !empty($errores['general']) ? 'true' : 'false'; ?>"
                             required>
+                        <small class="form-text text-muted">Debes usar una dirección que termine en @gmail.com.</small>
                         <?php if (!empty($errores['correo'])): ?>
                             <div class="invalid-feedback d-block"><?= htmlspecialchars($errores['correo'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>

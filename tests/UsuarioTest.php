@@ -24,20 +24,20 @@ final class UsuarioTest extends ModeloTestCase
         $contrasena = password_hash('Secreto123', PASSWORD_DEFAULT);
         $idUsuario = Usuario::crear([
             'nombre' => '  Ana  ',
-            'correo' => ' ANA@EXAMPLE.COM ',
+            'correo' => ' ANA@GMAIL.COM ',
             'contrasena' => $contrasena,
             'rol' => 'comprador',
         ]);
 
         self::assertGreaterThan(0, $idUsuario);
-        self::assertSame('ana@example.com', Usuario::buscarPorCorreo('ana@example.com')['correo']);
+        self::assertSame('ana@gmail.com', Usuario::buscarPorCorreo('ana@gmail.com')['correo']);
     }
 
     public function testCrearUsuarioRechazaCorreoDuplicado(): void
     {
         $datos = [
             'nombre' => 'Ana',
-            'correo' => 'ana@example.com',
+            'correo' => 'ana@gmail.com',
             'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
             'rol' => 'comprador',
         ];
@@ -63,7 +63,7 @@ final class UsuarioTest extends ModeloTestCase
         $this->expectException(InvalidArgumentException::class);
         Usuario::crear([
             'nombre' => 'Ana',
-            'correo' => 'ana@example.com',
+            'correo' => 'ana@gmail.com',
             'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
         ]);
     }
@@ -79,28 +79,54 @@ final class UsuarioTest extends ModeloTestCase
         ]);
     }
 
-    public function testLoginAceptaCredencialesCorrectas(): void
+    public function testCrearUsuarioRechazaDominioQueSoloContieneGmailComComoSufijo(): void
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('El correo electrónico debe pertenecer a @gmail.com.');
+
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'erainpluna@gmail.com.xd',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+    }
+
+    public function testCrearUsuarioRechazaOtrosDominiosValidos(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('El correo electrónico debe pertenecer a @gmail.com.');
+
         Usuario::crear([
             'nombre' => 'Ana',
             'correo' => 'ana@example.com',
             'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
             'rol' => 'comprador',
         ]);
+    }
 
-        self::assertNotNull(Usuario::verificarCredenciales('ana@example.com', 'Secreto123'));
+    public function testLoginAceptaCredencialesCorrectas(): void
+    {
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+
+        self::assertNotNull(Usuario::verificarCredenciales('ana@gmail.com', 'Secreto123'));
     }
 
     public function testLoginRechazaCredencialesIncorrectas(): void
     {
         Usuario::crear([
             'nombre' => 'Ana',
-            'correo' => 'ana@example.com',
+            'correo' => 'ana@gmail.com',
             'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
             'rol' => 'comprador',
         ]);
 
-        self::assertNull(Usuario::verificarCredenciales('ana@example.com', 'incorrecta'));
-        self::assertNull(Usuario::verificarCredenciales('inexistente@example.com', 'Secreto123'));
+        self::assertNull(Usuario::verificarCredenciales('ana@gmail.com', 'incorrecta'));
+        self::assertNull(Usuario::verificarCredenciales('inexistente@gmail.com', 'Secreto123'));
     }
 }

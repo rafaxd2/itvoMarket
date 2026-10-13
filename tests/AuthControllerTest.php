@@ -38,16 +38,33 @@ final class AuthControllerTest extends ModeloTestCase
         self::assertStringContainsString('id="rolVendedor" value="vendedor" checked', $html);
     }
 
+    public function testRegistroRechazaCorreoQueNoTerminaEnGmailCom(): void
+    {
+        $_POST = [
+            'correo' => 'erainpluna@gmail.com.xd',
+            'contrasena' => 'Secreto123',
+            'rol' => 'comprador',
+        ];
+
+        ob_start();
+        (new AuthController())->registrar();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString('El correo electrónico debe pertenecer a @gmail.com.', $html);
+        self::assertStringContainsString('value="erainpluna@gmail.com.xd"', $html);
+        self::assertSame(0, (int) $this->conexion->query('SELECT COUNT(*) FROM usuario')->fetchColumn());
+    }
+
     public function testRegistroConCorreoDuplicadoMuestraErrorEnCorreo(): void
     {
         Usuario::crear([
             'nombre' => 'Ana',
-            'correo' => 'ana@example.com',
+            'correo' => 'ana@gmail.com',
             'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
             'rol' => 'comprador',
         ]);
         $_POST = [
-            'correo' => 'ana@example.com',
+            'correo' => 'ana@gmail.com',
             'contrasena' => 'OtraClave123',
             'rol' => 'vendedor',
         ];
@@ -57,7 +74,7 @@ final class AuthControllerTest extends ModeloTestCase
         $html = ob_get_clean();
 
         self::assertStringContainsString('Este correo ya está registrado', $html);
-        self::assertStringContainsString('value="ana@example.com"', $html);
+        self::assertStringContainsString('value="ana@gmail.com"', $html);
         self::assertStringContainsString('id="rolVendedor" value="vendedor" checked', $html);
         self::assertSame(1, (int) $this->conexion->query('SELECT COUNT(*) FROM usuario')->fetchColumn());
     }
