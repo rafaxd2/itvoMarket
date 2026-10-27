@@ -38,29 +38,32 @@ Estructura de arriba hacia abajo:
 **Animaciones:** ninguna de entrada para las tarjetas (regla de Sprint 1). Solo las microinteracciones ya definidas: botón "Buscar" que se hunde al presionar y anillo verde de enfoque en el campo y la lista.
 
 ### Pantallas de recuperación de contraseña (3 pantallas y aviso final)
-Las pantallas de solicitud, código y error comparten el mismo marco que **Login**: logo grande centrado arriba, fondo con los objetos flotantes, tarjeta clay a la izquierda y **panel lateral verde clay "Recupera tu acceso"** a la derecha, con la misma animación de entrada de dos pasos (logo, luego tarjeta y panel). No llevan header de vistas internas. Pie de página fijo como en todas las vistas.
+Las pantallas de solicitud, código y nueva contraseña comparten el mismo marco que **Login**: logo grande centrado arriba, fondo con los objetos flotantes, tarjeta clay a la izquierda y **panel lateral verde clay "Recupera tu acceso"** a la derecha, con la misma animación de entrada de dos pasos (logo, luego tarjeta y panel). No llevan header de vistas internas. Pie de página fijo como en todas las vistas.
 
-Texto del panel lateral (igual en las tres pantallas): se usa el texto de cada wireframe; el párrafo común es "Una misma cuenta para consultar como Comprador o publicar como Vendedor."
+Texto del panel lateral: se usa el texto de cada wireframe; el párrafo común en las pantallas de recuperación es "Una misma cuenta para consultar como Comprador o publicar como Vendedor."
 
 **1. "Olvidé mi contraseña"** (solicitud de código)
 - Subtítulo: "Solicita un código temporal para recuperar el acceso a tu cuenta."
 - Tarjeta "Recuperación de contraseña": campo "Correo registrado" (placeholder `tu.correo@ejemplo.com`), texto de ayuda "Si el correo está asociado a una cuenta, recibirás un código para restablecer tu contraseña.", botón primario "Solicitar código de recuperación", enlace "Volver a inicio de sesión".
 - Panel: "Usa el correo con el que te registraste. El código te permitirá elegir una nueva contraseña."
 - Error de formato o campo vacío: borde y sombra en rojo `#D64545`, mensaje de ayuda junto al campo, desplazamiento lateral único (regla de Sprint 1).
-- **Después de enviar**: guardar el correo en la sesión y mostrar la pantalla de código con un aviso verde clay hundido: "Revisa tu correo. Si está asociado a una cuenta, recibirás un código que vence en 15 minutos. Si no lo ves, busca en spam." Mostrar el mismo aviso exista o no la cuenta.
+- **Después de enviar**: guardar el correo en la sesión y pasar a "Revisa tu correo". En esa pantalla mostrar el correo indicado y el texto neutral de recuperación, sin distinguir si la cuenta existe.
 
-**2. "Ingresa tu código"**
-- Subtítulo: "Escribe el código de 6 dígitos que enviamos a tu correo para continuar."
-- Tarjeta: aviso neutral de revisión del correo; campo "Código de 6 dígitos" (numérico, conserva ceros iniciales), campo "Nueva contraseña" (placeholder "Escribe una nueva contraseña"), caja informativa clay hundida con "Requisitos: Al menos 8 caracteres, con letras y números. Evita tu nombre y no reutilices otras contraseñas.", campo "Confirmar nueva contraseña" (placeholder "Repite la nueva contraseña"), botón primario "Guardar nueva contraseña", enlace "Solicitar un código nuevo" y enlace "Volver a inicio de sesión".
-- Panel: "El código es temporal y de un solo uso. No lo compartas con nadie ni compartas tu nueva contraseña."
-- Validar que el hash SHA-256 de `id_usuario . ':' . codigo` coincida y que `token_expira > NOW()`. El código vence en 15 minutos. El correo se toma de la sesión, nunca del formulario de código.
-- Los errores (código incorrecto o vencido, campo vacío, contraseñas distintas o contraseña débil) se muestran junto al campo en rojo. Contar en sesión los errores de código; al quinto, invalidar el código y pedir uno nuevo.
+**2. "Revisa tu correo"** (verificación)
+- Subtítulo: "Solicitud registrada. El siguiente paso es ingresar tu código de recuperación."
+- Tarjeta: recuadro clay hundido "Correo indicado" que muestra el correo de la solicitud; texto "Si está asociado a una cuenta, recibirás un mensaje con un código de recuperación. Ingrésalo aquí para crear una nueva contraseña."; etiqueta "Código de recuperación".
+- Mostrar seis casillas individuales clay, cada una de un dígito (`inputmode=numeric`, `maxlength=1`); la primera usa `autocomplete=one-time-code` y recibe foco al cargar. Al escribir, solo aceptar números y avanzar el foco; Backspace vuelve a la casilla anterior; pegar seis dígitos los reparte en las casillas. Un campo oculto `codigo` combina las seis casillas antes de enviar. Sin JavaScript se muestra un campo de texto de seis dígitos como respaldo.
+- Ayuda: "Ingresa los 6 dígitos que recibiste en tu correo." y "¿No lo encuentras? Revisa la carpeta de correo no deseado antes de solicitar otro código."
+- Botón primario "Verificar código". Debajo, enlaces "Reenviar código", "Corregir correo" y "Volver a inicio de sesión".
+- Reenvío: mínimo 60 segundos entre solicitudes según `$_SESSION`; al reenvío permitido, reemplazar el código previo y mostrar "Te enviamos un código nuevo". Mientras dure la espera, indicar cuántos segundos faltan. "Corregir correo" regresa a la pantalla de solicitud con el correo previo y limpia el estado de recuperación.
+- Código incorrecto o vencido: mostrar "Código incorrecto o vencido" en esta misma pantalla, conservar el correo y permitir solicitar un código nuevo. Contar fallos en sesión; al quinto, invalidar `token_reset` en la base.
+- Panel: "Ingresa el código que enviamos a tu correo para comprobar que la cuenta es tuya. Después podrás elegir una nueva contraseña." Mantener el párrafo compartido de los paneles de autenticación.
 
-**3. "Código incorrecto o vencido"**
-- Subtítulo: "Solicita un código nuevo para continuar con la recuperación de tu cuenta."
-- Tarjeta: caja clay hundida "Código incorrecto o vencido — Por seguridad, el código dejó de ser válido. Solicita uno nuevo para continuar.", botón primario "Solicitar un código nuevo" (lleva a la pantalla 1), enlace "Volver a inicio de sesión".
-- Panel: "Los códigos de recuperación son temporales y de un solo uso. Si no se puede validar, comienza una nueva solicitud."
-- No se permite continuar con un código incorrecto, vencido, usado o después del quinto intento fallido.
+**3. "Crea tu nueva contraseña"** (solo tras verificar el código)
+- Subtítulo: "El código fue verificado. Ahora elige una contraseña segura para tu cuenta."
+- Tarjeta: campos "Nueva contraseña" y "Confirmar contraseña", caja clay hundida "Requisitos: Al menos 8 caracteres, con letras y números.", botón "Guardar nueva contraseña", enlaces "Volver a ingresar el código" y "Volver a inicio de sesión".
+- Antes de mostrar esta pantalla y al guardar, validar en el servidor que la sesión tenga el indicador de código verificado y que el hash siga vigente en la base (`token_expira > NOW()`). Si se entra sin verificación, redirigir a "Revisa tu correo". Si el código expiró, volver a la pantalla de código con "Código incorrecto o vencido".
+- Errores de contraseña se muestran junto a sus campos en rojo.
 
 **Aviso final "Contraseña actualizada"**
 - Al guardar correctamente, redirigir a Login y mostrar el mensaje de éxito "Contraseña actualizada. Ya puedes iniciar sesión."

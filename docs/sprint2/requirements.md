@@ -70,19 +70,19 @@ Cuando el usuario envía un correo con formato válido, el sistema debe guardar 
 Cuando el correo corresponde a una cuenta registrada, el sistema debe generar un código aleatorio de 6 dígitos, guardar en `token_reset` solo `hash('sha256', id_usuario . ':' . codigo)`, fijar `token_expira` a 15 minutos en SQL y enviar el código al correo.
 
 5. [Event-driven]
-Cuando el usuario solicita un nuevo código, el sistema debe reemplazar el anterior, de modo que solo el código más reciente sea válido.
+Cuando el usuario selecciona "Reenviar código" y han pasado al menos 60 segundos desde el envío anterior, el sistema debe reemplazar el código anterior, enviar uno nuevo y mostrar "Te enviamos un código nuevo". Antes de que pasen 60 segundos, debe informar cuánto falta y no generar ni enviar otro código.
 
 6. [Event-driven]
-Cuando el usuario abre la pantalla de código, el sistema debe solicitar el código de 6 dígitos, la "Nueva contraseña" y la "Confirmar nueva contraseña". Solo permite continuar si el hash del código coincide con el correo guardado en sesión y `token_expira > NOW()`.
+Cuando el usuario ve "Revisa tu correo", el sistema debe mostrar el correo indicado y seis casillas de un dígito (`inputmode=numeric`, `maxlength=1`); la primera usa `autocomplete=one-time-code` y recibe el foco inicial. Al escribir un dígito, el foco avanza; Backspace vuelve a la casilla anterior; pegar seis dígitos los reparte entre las casillas. Solo se aceptan números; un campo oculto `codigo` combina las seis casillas y, sin JavaScript, hay un campo de texto de seis dígitos como respaldo. El texto explica "Ingresa los 6 dígitos que recibiste en tu correo" y recomienda revisar correo no deseado. La pantalla ofrece "Reenviar código", "Corregir correo" y "Volver a inicio de sesión".
 
 7. [Event-driven]
-Cuando el usuario ingresa un código incorrecto o vencido, el sistema debe mostrar "Código incorrecto o vencido" y ofrecer solicitar uno nuevo, sin revelar si el correo existe.
+Cuando el usuario selecciona "Corregir correo", el sistema debe regresar a "Olvidé mi contraseña" con el correo previamente escrito y limpiar el estado de recuperación. Cuando ingresa un código incorrecto o vencido, el sistema debe mostrar "Código incorrecto o vencido" y conservar el correo, sin revelar si la cuenta existe.
 
 8. [Event-driven]
-Cuando el código falla, el sistema debe contar el intento en `$_SESSION`; al quinto fallo debe poner `token_reset` en NULL y solicitar un código nuevo. Cuando algún campo de contraseña está vacío, las contraseñas no coinciden o no cumplen la regla de seguridad (mínimo 8 caracteres, una letra y un número), debe mostrar el error junto al campo, marcarlo en rojo y no guardar nada.
+Cuando el código falla, el sistema debe contar el intento en `$_SESSION`; al quinto fallo debe poner `token_reset` en NULL y pedir un código nuevo. Cuando el código es válido y no venció (`token_expira > NOW()`), debe marcarlo como verificado en la sesión y mostrar "Crea tu nueva contraseña". Esa pantalla solo se permite con la verificación en sesión y el código todavía vigente en la base de datos. Cuando algún campo de contraseña está vacío, las contraseñas no coinciden o no cumplen la regla de seguridad (mínimo 8 caracteres, una letra y un número), debe mostrar el error junto al campo, marcarlo en rojo y no guardar nada.
 
 9. [Event-driven]
-Cuando el código y la nueva contraseña son válidos, el sistema debe guardar la contraseña con `password_hash()`, dejar `token_reset` y `token_expira` en NULL (el código no se puede reutilizar) y redirigir al login con "Contraseña actualizada".
+Cuando la nueva contraseña es válida, el sistema debe volver a validar en el servidor que el código verificado siga vigente, guardar la contraseña con `password_hash()`, dejar `token_reset` y `token_expira` en NULL, limpiar el estado de recuperación de sesión y redirigir al login con "Contraseña actualizada". El código no se puede reutilizar.
 
 10. [Event-driven]
 Cuando se muestra "Contraseña actualizada", el sistema NO debe iniciar sesión automáticamente y debe dejar visible el formulario de inicio de sesión.
