@@ -34,13 +34,12 @@ final class UsuarioTest extends ModeloTestCase
         $usuario = $this->conexion->query(
             'SELECT token_reset, token_expira FROM usuario WHERE id_usuario = ' . $idUsuario
         )->fetch();
-        $ahoraBaseDatos = strtotime((string) $this->conexion->query("SELECT datetime('now')")->fetchColumn());
+        $vencimientoEsperado = $this->conexion->query("SELECT datetime('now', '+15 minutes')")->fetchColumn();
 
         self::assertIsString($codigo);
         self::assertMatchesRegularExpression('/\A[0-9]{6}\z/', $codigo);
         self::assertSame(hash('sha256', $idUsuario . ':' . $codigo), $usuario['token_reset']);
-        self::assertGreaterThan($ahoraBaseDatos, strtotime($usuario['token_expira']));
-        self::assertLessThanOrEqual($ahoraBaseDatos + 901, strtotime($usuario['token_expira']));
+        self::assertSame($vencimientoEsperado, $usuario['token_expira']);
     }
 
     public function testCodigoValidoSeAceptaYCodigoIncorrectoOVencidoSeRechaza(): void

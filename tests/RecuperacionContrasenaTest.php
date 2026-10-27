@@ -241,4 +241,18 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
 
         self::assertSame(0, $_SESSION['recuperacion_intentos']);
     }
+
+    public function testReglasDeContrasenaAceptanUnaConLetraYNumeroDeOchoCaracteres(): void
+    {
+        self::assertSame('', validarContrasenaSegura('Abcdefg1'));
+    }
+
+    public function testReglasDeContrasenaRechazanContrasenaCortaSinLetraOSinNumero(): void
+    {
+        $mensajeEsperado = 'La contraseña debe tener al menos 8 caracteres, una letra y un número.';
+
+        self::assertSame($mensajeEsperado, validarContrasenaSegura('Abc1234'));
+        self::assertSame($mensajeEsperado, validarContrasenaSegura('12345678'));
+        self::assertSame($mensajeEsperado, validarContrasenaSegura('abcdefgh'));
+    }
 }

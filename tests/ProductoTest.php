@@ -27,7 +27,21 @@ final class ProductoTest extends ModeloTestCase
                 imagen_producto TEXT NOT NULL
             )'
         );
-        $this->conexion->exec("INSERT INTO categorias (tipo_categoria) VALUES ('Comida')");
+        $this->conexion->exec(
+            'CREATE TABLE usuario (
+                id_usuario INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL
+            )'
+        );
+        $this->conexion->exec(
+            'CREATE TABLE vendedores (
+                id_vendedor INTEGER PRIMARY KEY,
+                id_usuario INTEGER NOT NULL
+            )'
+        );
+        $this->conexion->exec("INSERT INTO categorias (tipo_categoria) VALUES ('Comida'), ('Bebida')");
+        $this->conexion->exec("INSERT INTO usuario (id_usuario, nombre) VALUES (1, 'Ana')");
+        $this->conexion->exec("INSERT INTO vendedores (id_vendedor, id_usuario) VALUES (1, 1)");
     }
 
     public function testCrearProductoValido(): void
@@ -78,6 +92,103 @@ final class ProductoTest extends ModeloTestCase
         self::assertTrue(Producto::validarFormatoImagen('producto.png'));
         self::assertFalse(Producto::validarFormatoImagen('producto.gif'));
         self::assertFalse(Producto::validarFormatoImagen('producto'));
+    }
+
+    public function testCatalogoBuscaTextoEnNombreYDescripcion(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol y queso', 1);
+        $this->insertarProductoCatalogo(2, 'Agua fresca', 'Torta de jamaica', 2);
+        $this->insertarProductoCatalogo(3, 'Galleta', 'Avena y miel', 1);
+
+        $productos = Producto::listarCatalogo('Torta', null);
+
+        self::assertSame(['Agua fresca', 'Torta'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoFiltraPorCategoria(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol y queso', 1);
+        $this->insertarProductoCatalogo(2, 'Agua fresca', 'Horchata', 2);
+
+        $productos = Producto::listarCatalogo(null, 2);
+
+        self::assertSame(['Agua fresca'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoCombinaTextoYCategoriaConAnd(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+        $this->insertarProductoCatalogo(2, 'Torta de agua', 'Bebida', 2);
+        $this->insertarProductoCatalogo(3, 'Agua fresca', 'Torta de jamaica', 2);
+
+        $productos = Producto::listarCatalogo('Torta', 2);
+
+        self::assertSame(['Agua fresca', 'Torta de agua'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoTrataPorcentajeComoTextoLiteral(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Dulce 100%', 'Azúcar', 1);
+        $this->insertarProductoCatalogo(2, 'Dulce 100 chocolate', 'Azúcar', 1);
+
+        $productos = Producto::listarCatalogo('%', null);
+
+        self::assertSame(['Dulce 100%'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoTrataGuionBajoComoTextoLiteral(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Pan_cito', 'Pan dulce', 1);
+        $this->insertarProductoCatalogo(2, 'Pancito', 'Pan dulce', 1);
+
+        $productos = Producto::listarCatalogo('_', null);
+
+        self::assertSame(['Pan_cito'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoTrataBarraInvertidaComoTextoLiteral(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Botana\\Chile', 'Picante', 1);
+        $this->insertarProductoCatalogo(2, 'Botana Chile', 'Picante', 1);
+
+        $productos = Producto::listarCatalogo('\\', null);
+
+        self::assertSame(['Botana\\Chile'], array_column($productos, 'nombre'));
+    }
+
+    public function testCatalogoDevuelveArregloVacioCuandoNoHayCoincidencias(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol y queso', 1);
+
+        self::assertSame([], Producto::listarCatalogo('No existe', null));
+    }
+
+    public function testCatalogoSinFiltrosDevuelveTodasLasPublicaciones(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol y queso', 1);
+        $this->insertarProductoCatalogo(2, 'Agua fresca', 'Horchata', 2);
+
+        $productos = Producto::listarCatalogo('', null);
+
+        self::assertSame(['Agua fresca', 'Torta'], array_column($productos, 'nombre'));
+    }
+
+    private function insertarProductoCatalogo(int $id, string $nombre, string $descripcion, int $idCategoria): void
+    {
+        $consulta = $this->conexion->prepare(
+            'INSERT INTO productos (
+                id_producto, id_vendedor, id_categoria, id_estado, id_condicion,
+                id_estado_ubicacion, nombre, descripcion_producto, precio, imagen_producto
+            ) VALUES (
+                :id_producto, 1, :id_categoria, 1, 1, 1, :nombre, :descripcion, 25.00, ""
+            )'
+        );
+        $consulta->execute([
+            ':id_producto' => $id,
+            ':id_categoria' => $idCategoria,
+            ':nombre' => $nombre,
+            ':descripcion' => $descripcion,
+        ]);
     }
 
     private function datosProducto(): array
