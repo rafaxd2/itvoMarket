@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../services/CorreoServicio.php';
+require_once __DIR__ . '/../helpers/Validaciones.php';
 
 // Controlador que centraliza el registro, acceso y cierre de sesión del sistema.
 class AuthController
@@ -148,6 +149,68 @@ class AuthController
             error_log('Error al validar enlace de recuperación: ' . $excepcion->getMessage());
             $errorValidacion = 'No pudimos validar el enlace. Intenta de nuevo en unos minutos.';
             include __DIR__ . '/../views/enlace_invalido.php';
+        }
+    }
+
+    public function guardarNuevaContrasena(): void
+    {
+        $token = $_POST['token'] ?? '';
+        $contrasena = is_string($_POST['contrasena'] ?? null)
+            ? $_POST['contrasena']
+            : '';
+        $confirmarContrasena = is_string($_POST['confirmar_contrasena'] ?? null)
+            ? $_POST['confirmar_contrasena']
+            : '';
+
+        if (!is_string($token) || preg_match('/\A[a-f0-9]{64}\z/', $token) !== 1) {
+            include __DIR__ . '/../views/enlace_invalido.php';
+            return;
+        }
+
+        try {
+            $usuario = Usuario::buscarPorToken($token);
+
+            if ($usuario === null) {
+                include __DIR__ . '/../views/enlace_invalido.php';
+                return;
+            }
+
+            $errores = [];
+
+            if ($contrasena === '') {
+                $errores['contrasena'] = 'Ingresa una nueva contraseña.';
+            } else {
+                $errorContrasena = validarContrasenaSegura($contrasena);
+                if ($errorContrasena !== '') {
+                    $errores['contrasena'] = $errorContrasena;
+                }
+            }
+
+            if ($confirmarContrasena === '') {
+                $errores['confirmar_contrasena'] = 'Confirma la nueva contraseña.';
+            } elseif ($contrasena !== $confirmarContrasena) {
+                $errores['confirmar_contrasena'] = 'Las contraseñas no coinciden.';
+            }
+
+            if ($errores !== []) {
+                include __DIR__ . '/../views/restablecer_contrasena.php';
+                return;
+            }
+
+            if (!Usuario::actualizarContrasena((int) $usuario['id_usuario'], $contrasena)) {
+                include __DIR__ . '/../views/enlace_invalido.php';
+                return;
+            }
+
+            include __DIR__ . '/../views/contrasena_actualizada.php';
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al guardar contraseña: ' . $excepcion->getMessage());
+            $errores = ['general' => 'No pudimos actualizar la contraseña. Intenta de nuevo en unos minutos.'];
+            include __DIR__ . '/../views/restablecer_contrasena.php';
+        } catch (Throwable $excepcion) {
+            error_log('Error al guardar contraseña: ' . $excepcion->getMessage());
+            $errores = ['general' => 'No pudimos actualizar la contraseña. Intenta de nuevo en unos minutos.'];
+            include __DIR__ . '/../views/restablecer_contrasena.php';
         }
     }
 

@@ -26,6 +26,9 @@
             <div class="col-md-6 auth-main">
                 <h1 id="titulo-restablecer" class="fw-bold mb-2">Restablecer contraseña</h1>
                 <p class="recovery-subtitle">Crea una nueva contraseña para volver a acceder a tu cuenta.</p>
+                <?php if (!empty($errores['general'])): ?>
+                    <div class="alert alert-danger" role="alert"><?= htmlspecialchars($errores['general'], ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
                 <span class="recovery-valid-label">Enlace válido · Puedes continuar</span>
                 <form method="post" action="index.php?accion=guardar_contrasena" novalidate>
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
