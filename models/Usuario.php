@@ -18,6 +18,35 @@ class Usuario
         return $usuario !== false ? $usuario : null;
     }
 
+    public static function generarTokenRestablecimiento(string $correo): ?string
+    {
+        $conexion = obtenerConexionBaseDatos();
+        $consultaUsuario = $conexion->prepare('SELECT id_usuario FROM usuario WHERE correo = :correo LIMIT 1');
+        $consultaUsuario->execute([':correo' => trim(strtolower($correo))]);
+        $usuario = $consultaUsuario->fetch();
+
+        if ($usuario === false) {
+            return null;
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $hashToken = hash('sha256', $token);
+        $fechaExpiracion = $conexion->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
+            ? "datetime('now', '+15 minutes')"
+            : 'DATE_ADD(NOW(), INTERVAL 15 MINUTE)';
+        $consultaToken = $conexion->prepare(
+            'UPDATE usuario
+            SET token_reset = :token_reset, token_expira = ' . $fechaExpiracion . '
+            WHERE id_usuario = :id_usuario'
+        );
+        $consultaToken->execute([
+            ':token_reset' => $hashToken,
+            ':id_usuario' => (int) $usuario['id_usuario'],
+        ]);
+
+        return $token;
+    }
+
     // Crea un usuario nuevo con nombre, correo, contraseña cifrada y rol válidos.
     public static function crear(...$argumentos): int
     {
