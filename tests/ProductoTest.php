@@ -100,6 +100,17 @@ final class ProductoTest extends ModeloTestCase
         Producto::crear($datos);
     }
 
+    public function testCrearProductoPermiteContinuarSinImagenSiElAlmacenamientoNoEstaDisponible(): void
+    {
+        $datos = $this->datosProducto();
+        $datos['imagen_producto'] = '';
+
+        $idProducto = Producto::crear($datos);
+
+        self::assertGreaterThan(0, $idProducto);
+        self::assertSame('', $this->conexion->query('SELECT imagen_producto FROM productos')->fetchColumn());
+    }
+
     public function testValidarFormatoDeImagen(): void
     {
         self::assertTrue(Producto::validarFormatoImagen('producto.JPG'));
