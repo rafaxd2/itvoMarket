@@ -12,4 +12,11 @@ return [
     'MAIL_USERNAME' => obtenerValorEntorno('MAIL_USERNAME'),
     'MAIL_PASSWORD' => obtenerValorEntorno('MAIL_PASSWORD'),
     'MAIL_FROM_NAME' => obtenerValorEntorno('MAIL_FROM_NAME', 'ITVOmarket'),
+    'ALMACEN_IMAGENES' => strtolower(obtenerValorEntorno('ALMACEN_IMAGENES', 'local')),
+    'S3_ENDPOINT' => rtrim(obtenerValorEntorno('S3_ENDPOINT'), '/'),
+    'S3_REGION' => obtenerValorEntorno('S3_REGION'),
+    'S3_BUCKET' => obtenerValorEntorno('S3_BUCKET'),
+    'S3_KEY_ID' => obtenerValorEntorno('S3_KEY_ID'),
+    'S3_SECRET' => obtenerValorEntorno('S3_SECRET'),
+    'S3_URL_PUBLICA' => rtrim(obtenerValorEntorno('S3_URL_PUBLICA'), '/'),
 ];

@@ -21,7 +21,7 @@ class Producto
             throw new InvalidArgumentException('El precio debe ser un número positivo.');
         }
 
-        if (!self::validarFormatoImagen($datos['imagen_producto'])) {
+        if ($datos['imagen_producto'] !== '' && !self::validarFormatoImagen($datos['imagen_producto'])) {
             throw new InvalidArgumentException('La imagen debe tener formato jpg o png.');
         }
 

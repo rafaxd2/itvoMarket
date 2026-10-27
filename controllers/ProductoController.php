@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../services/AlmacenImagenes.php';
 
 // Controlador encargado de publicar productos desde la cuenta de un vendedor.
 class ProductoController
@@ -24,7 +25,7 @@ class ProductoController
         include __DIR__ . '/../views/publicar.php';
     }
 
-    // Valida y guarda un producto nuevo en la base de datos y en el almacenamiento local.
+    // Valida y guarda un producto nuevo con almacenamiento S3 y respaldo local.
     public function publicar(): void
     {
         AuthController::requerirSesion();
@@ -76,7 +77,11 @@ class ProductoController
         }
 
         $idVendedor = $this->obtenerIdVendedorActual();
-        $rutaDestino = $this->guardarArchivoImagen();
+        $archivoImagen = $_FILES['imagen'];
+        $rutaDestino = AlmacenImagenes::guardar(
+            (string) $archivoImagen['tmp_name'],
+            (string) $archivoImagen['name']
+        );
 
         $productoRecienteId = Producto::crear([
             'id_vendedor' => $idVendedor,
@@ -135,24 +140,4 @@ class ProductoController
         return (int) $conexion->lastInsertId();
     }
 
-    // Guarda la imagen del producto en la carpeta pública de uploads y devuelve la ruta pública.
-    private function guardarArchivoImagen(): string
-    {
-        $rutaDirectorio = __DIR__ . '/../public/assets/uploads';
-
-        if (!is_dir($rutaDirectorio)) {
-            mkdir($rutaDirectorio, 0777, true);
-        }
-
-        $archivo = $_FILES['imagen'];
-        $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
-        $nombreArchivo = uniqid('producto_', true) . '.' . $extension;
-        $rutaDestino = $rutaDirectorio . '/' . $nombreArchivo;
-
-        if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
-            throw new RuntimeException('No fue posible guardar la imagen del producto.');
-        }
-
-        return 'assets/uploads/' . $nombreArchivo;
-    }
 }

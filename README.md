@@ -27,6 +27,13 @@ MAIL_USERNAME=
 MAIL_PASSWORD=
 MAIL_FROM=
 MAIL_FROM_NAME=ITVOmarket
+ALMACEN_IMAGENES=local
+S3_ENDPOINT=https://s3.us-west-2.idrivee2.com
+S3_REGION=us-west-2
+S3_BUCKET=itvomarket-imagenes
+S3_KEY_ID=
+S3_SECRET=
+S3_URL_PUBLICA=https://itvomarket-imagenes.s3.us-west-2.idrivee2.com
 ```
 
 La base de datos y sus tablas deben existir previamente; la aplicación no las crea ni las modifica.
@@ -36,6 +43,8 @@ Para usar Gmail, activa la verificación en dos pasos de la cuenta y genera una 
 Para desarrollar sin enviar correo ni requerir internet, deja `MAIL_MODO=log`. Los mensajes de recuperación se registran en el log de PHP del servidor local.
 
 PHPMailer debe estar disponible en `libs/PHPMailer/PHPMailer.php`, `libs/PHPMailer/SMTP.php` y `libs/PHPMailer/Exception.php`; se incluye desde esos archivos y no requiere Composer.
+
+Para almacenar las imágenes en IDrive e2, configura `ALMACEN_IMAGENES=s3` y agrega a `.env` el endpoint regional, región, nombre del bucket, URL pública, `S3_KEY_ID` y `S3_SECRET` de una clave con permisos para PutObject y ACL pública. La extensión cURL de PHP debe estar habilitada. Las claves se mantienen exclusivamente en `.env`. En modo `s3`, las imágenes se suben con acceso público de lectura; si S3 falla, la aplicación las guarda en `public/assets/uploads/`. Usa `ALMACEN_IMAGENES=local` para desactivar el bucket.
 
 2. Inicia el servidor local desde la raíz del proyecto con PHP de XAMPP:
 
