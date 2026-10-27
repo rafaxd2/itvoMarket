@@ -14,7 +14,9 @@ final class AuthControllerTest extends ModeloTestCase
                 correo TEXT NOT NULL UNIQUE,
                 contrasena TEXT NOT NULL,
                 rol TEXT NOT NULL,
-                fecha_registro TEXT NOT NULL
+                fecha_registro TEXT NOT NULL,
+                token_reset TEXT NULL,
+                token_expira TEXT NULL
             )'
         );
         require_once __DIR__ . '/../controllers/AuthController.php';

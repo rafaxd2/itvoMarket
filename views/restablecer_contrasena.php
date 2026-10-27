@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITVOmarket | Restablecer contraseña</title>
+    <title>ITVOmarket | Ingresa tu código</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="assets/css/itvomarket.css">
@@ -24,14 +24,37 @@
         <img class="auth-logo" src="assets/img/logo-itvomarket.png" alt="ITVOmarket">
         <section class="auth-panel clay-card row w-100" aria-labelledby="titulo-restablecer">
             <div class="col-md-6 auth-main">
-                <h1 id="titulo-restablecer" class="fw-bold mb-2">Restablecer contraseña</h1>
-                <p class="recovery-subtitle">Crea una nueva contraseña para volver a acceder a tu cuenta.</p>
+                <h1 id="titulo-restablecer" class="fw-bold mb-2">Ingresa tu código</h1>
+                <p class="recovery-subtitle">Escribe el código de 6 dígitos que enviamos a tu correo para continuar.</p>
+                <?php if (!empty($solicitudRecibida)): ?>
+                    <div class="recovery-notice recovery-notice--success" role="status">
+                        <strong>Revisa tu correo.</strong>
+                        <p class="mb-0">Si el correo está asociado a una cuenta, recibirás un código que vence en 15 minutos. Si no lo ves, busca en spam.</p>
+                    </div>
+                <?php endif; ?>
                 <?php if (!empty($errores['general'])): ?>
                     <div class="alert alert-danger" role="alert"><?= htmlspecialchars($errores['general'], ENT_QUOTES, 'UTF-8'); ?></div>
                 <?php endif; ?>
-                <span class="recovery-valid-label">Enlace válido · Puedes continuar</span>
                 <form method="post" action="index.php?accion=guardar_contrasena" novalidate>
-                    <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
+                    <div class="mb-3">
+                        <label for="codigo-recuperacion" class="form-label">Código de 6 dígitos</label>
+                        <input
+                            id="codigo-recuperacion"
+                            name="codigo"
+                            type="text"
+                            class="form-control clay-input <?= !empty($errores['codigo']) ? 'is-invalid' : ''; ?>"
+                            value="<?= htmlspecialchars($codigo ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                            pattern="[0-9]{6}"
+                            maxlength="6"
+                            aria-invalid="<?= !empty($errores['codigo']) ? 'true' : 'false'; ?>"
+                            <?= !empty($errores['codigo']) ? 'aria-describedby="error-codigo-recuperacion"' : ''; ?>
+                            required>
+                        <?php if (!empty($errores['codigo'])): ?>
+                            <div id="error-codigo-recuperacion" class="invalid-feedback"><?= htmlspecialchars($errores['codigo'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
+                    </div>
                     <div class="mb-3">
                         <label for="nueva-contrasena" class="form-label">Nueva contraseña</label>
                         <input
@@ -70,12 +93,13 @@
                     <button type="submit" class="btn btn-primary clay-button w-100">Guardar nueva contraseña</button>
                 </form>
                 <div class="recovery-back-link">
+                    <a href="index.php?accion=olvide">Solicitar un código nuevo</a><br>
                     <a href="index.php?accion=login">Volver a inicio de sesión</a>
                 </div>
             </div>
             <aside class="col-md-6 auth-side clay-panel-color d-flex flex-column justify-content-center">
                 <h2 class="fw-bold">Recupera tu acceso</h2>
-                <p class="mt-3">Este formulario solo se muestra después de validar el enlace temporal. No compartas el enlace ni tu nueva contraseña.</p>
+                <p class="mt-3">El código es temporal y de un solo uso. No lo compartas con nadie ni compartas tu nueva contraseña.</p>
                 <p class="mb-0">Una misma cuenta para consultar como Comprador o publicar como Vendedor.</p>
             </aside>
         </section>

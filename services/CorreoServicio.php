@@ -11,13 +11,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class CorreoServicio
 {
-    public static function enviarRecuperacion(string $correo, string $nombre, string $enlace): bool
+    public static function enviarRecuperacion(string $correo, string $nombre, string $codigo): bool
     {
         $configuracion = require __DIR__ . '/../config/config.php';
         $modo = strtolower((string) $configuracion['MAIL_MODO']);
 
         if ($modo === 'log') {
-            error_log('Enlace de recuperación para ' . $correo . ': ' . $enlace, 4);
+            error_log('Código de recuperación para ' . $correo . ': ' . $codigo, 4);
             return true;
         }
 
@@ -26,44 +26,53 @@ class CorreoServicio
             return false;
         }
 
+        $mail = null;
+
         try {
-            $correoServicio = new PHPMailer(true);
-            $correoServicio->isSMTP();
-            $correoServicio->Host = (string) $configuracion['MAIL_HOST'];
-            $correoServicio->Port = (int) $configuracion['MAIL_PORT'];
-            $correoServicio->SMTPAuth = true;
-            $correoServicio->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $correoServicio->Username = (string) $configuracion['MAIL_USERNAME'];
-            $correoServicio->Password = (string) $configuracion['MAIL_PASSWORD'];
-            $correoServicio->CharSet = PHPMailer::CHARSET_UTF8;
-            $correoServicio->setFrom(
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = (string) $configuracion['MAIL_HOST'];
+            $mail->Port = (int) $configuracion['MAIL_PORT'];
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Username = (string) $configuracion['MAIL_USERNAME'];
+            $mail->Password = (string) $configuracion['MAIL_PASSWORD'];
+            $mail->CharSet = PHPMailer::CHARSET_UTF8;
+            $mail->setFrom(
                 (string) $configuracion['MAIL_USERNAME'],
                 (string) $configuracion['MAIL_FROM_NAME']
             );
-            $correoServicio->addAddress($correo, $nombre);
-            $correoServicio->Subject = 'Recupera tu acceso a ITVOmarket';
-            $enlaceSeguro = htmlspecialchars($enlace, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $correoServicio->isHTML(true);
-            $correoServicio->Body = '<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#FDFBF7;font-family:Arial,sans-serif;color:#1F2A24;">'
+            $mail->addAddress($correo, $nombre);
+            $mail->Subject = 'Tu código de recuperación de ITVOmarket';
+            $codigoSeguro = htmlspecialchars($codigo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $mail->isHTML(true);
+            $mail->Body = '<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#FDFBF7;font-family:Arial,sans-serif;color:#1F2A24;">'
                 . '<main style="max-width:480px;margin:0 auto;padding:24px;background:#FFFFFF;border-radius:24px;">'
                 . '<p>Hola,</p><p>Recibimos una solicitud para restablecer tu contraseña.</p>'
-                . '<p style="margin:28px 0;"><a href="' . $enlaceSeguro . '" style="display:inline-block;padding:14px 22px;background:#2E7D5B;border-radius:20px;color:#FFFFFF;text-decoration:none;">Restablecer contraseña</a></p>'
-                . '<p>Si el botón no funciona, abre este enlace:</p><p><a href="' . $enlaceSeguro . '" style="color:#2E7D5B;overflow-wrap:anywhere;">' . $enlaceSeguro . '</a></p>'
-                . '<p>Este enlace vence en 15 minutos y solo se puede usar una vez.</p>'
+                . '<p style="margin:28px 0;font-size:42px;font-weight:700;letter-spacing:10px;color:#2E7D5B;">' . $codigoSeguro . '</p>'
+                . '<p>Ingresa este código en ITVOmarket para continuar.</p>'
+                . '<p>Este código vence en 15 minutos y solo se puede usar una vez.</p>'
                 . '<p>Si no lo solicitaste, ignora este mensaje; tu contraseña no cambia.</p>'
                 . '</main></body></html>';
-            $correoServicio->AltBody = "Hola,\n\n"
+            $mail->AltBody = "Hola,\n\n"
                 . "Recibimos una solicitud para restablecer tu contraseña.\n\n"
-                . "Restablecer contraseña: {$enlace}\n\n"
-                . "Este enlace vence en 15 minutos y solo se puede usar una vez.\n\n"
+                . "Tu código de recuperación es: {$codigo}\n\n"
+                . "Ingresa este código en ITVOmarket para continuar.\n"
+                . "Este código vence en 15 minutos y solo se puede usar una vez.\n\n"
                 . "Si no lo solicitaste, ignora este mensaje; tu contraseña no cambia.";
 
-            return $correoServicio->send();
+            return $mail->send();
         } catch (ExcepcionPHPMailer $excepcion) {
-            error_log('No fue posible enviar el correo de recuperación: ' . $excepcion->getMessage());
+            $detalle = $mail instanceof PHPMailer && $mail->ErrorInfo !== ''
+                ? $mail->ErrorInfo
+                : $excepcion->getMessage();
+            error_log('No fue posible enviar el correo de recuperación: ' . $detalle);
             return false;
         } catch (Throwable $excepcion) {
-            error_log('Error al preparar el correo de recuperación: ' . $excepcion->getMessage());
+            $detalle = $mail instanceof PHPMailer && $mail->ErrorInfo !== ''
+                ? $mail->ErrorInfo
+                : $excepcion->getMessage();
+            error_log('Error al preparar el correo de recuperación: ' . $detalle);
             return false;
         }
     }

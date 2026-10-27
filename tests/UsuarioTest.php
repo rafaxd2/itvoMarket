@@ -14,9 +14,87 @@ final class UsuarioTest extends ModeloTestCase
                 correo TEXT NOT NULL UNIQUE,
                 contrasena TEXT NOT NULL,
                 rol TEXT NOT NULL,
-                fecha_registro TEXT NOT NULL
+                fecha_registro TEXT NOT NULL,
+                token_reset TEXT NULL,
+                token_expira TEXT NULL
             )'
         );
+    }
+
+    public function testCodigoSeGuardaComoHashYExpiraEnQuinceMinutos(): void
+    {
+        $idUsuario = Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+
+        $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+        $usuario = $this->conexion->query(
+            'SELECT token_reset, token_expira FROM usuario WHERE id_usuario = ' . $idUsuario
+        )->fetch();
+        $ahoraBaseDatos = strtotime((string) $this->conexion->query("SELECT datetime('now')")->fetchColumn());
+
+        self::assertIsString($codigo);
+        self::assertMatchesRegularExpression('/\A[0-9]{6}\z/', $codigo);
+        self::assertSame(hash('sha256', $idUsuario . ':' . $codigo), $usuario['token_reset']);
+        self::assertGreaterThan($ahoraBaseDatos, strtotime($usuario['token_expira']));
+        self::assertLessThanOrEqual($ahoraBaseDatos + 901, strtotime($usuario['token_expira']));
+    }
+
+    public function testCodigoValidoSeAceptaYCodigoIncorrectoOVencidoSeRechaza(): void
+    {
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+        $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+
+        self::assertNotNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigo));
+        self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', '123456'));
+        self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', '12345'));
+
+        $this->conexion->exec("UPDATE usuario SET token_expira = '2000-01-01 00:00:00'");
+        self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigo));
+    }
+
+    public function testActualizarContrasenaConsumeCodigoYGuardaHash(): void
+    {
+        $idUsuario = Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+        $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+
+        self::assertTrue(Usuario::actualizarContrasena($idUsuario, $codigo, 'NuevaClave123'));
+
+        $usuario = Usuario::buscarPorCorreo('ana@gmail.com');
+        self::assertTrue(password_verify('NuevaClave123', $usuario['contrasena']));
+        self::assertNull($usuario['token_reset']);
+        self::assertNull($usuario['token_expira']);
+        self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigo));
+    }
+
+    public function testInvalidarCodigoLimpiaElHashYLaExpiracion(): void
+    {
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+        Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+
+        Usuario::invalidarCodigoRestablecimiento('ana@gmail.com');
+
+        $usuario = Usuario::buscarPorCorreo('ana@gmail.com');
+        self::assertNull($usuario['token_reset']);
+        self::assertNull($usuario['token_expira']);
     }
 
     public function testCrearUsuarioConDatosValidos(): void

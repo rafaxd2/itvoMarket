@@ -30,6 +30,10 @@
                     <div class="alert alert-danger" role="alert"><?= htmlspecialchars($errores['general'], ENT_QUOTES, 'UTF-8'); ?></div>
                 <?php endif; ?>
 
+                <?php if ($mensajeExito !== ''): ?>
+                    <div class="alert alert-success" role="status"><?= htmlspecialchars($mensajeExito, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+
                 <?php if (isset($_GET['mensaje']) && $_GET['mensaje'] === 'registro_exitoso'): ?>
                     <div class="alert alert-success" role="alert">Cuenta creada correctamente. Ahora puedes iniciar sesión.</div>
                 <?php endif; ?>
