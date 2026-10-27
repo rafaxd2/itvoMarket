@@ -24,8 +24,13 @@ final class AlmacenImagenes
 
             if ($configuracion['ALMACEN_IMAGENES'] === 's3') {
                 try {
-                    $clave = 'productos/' . $nombreUnico;
-                    return self::subirObjetoS3($rutaTemporal, $clave, $tipoMimeValidado, $configuracion);
+                    self::subirObjetoS3(
+                        $rutaTemporal,
+                        'productos/' . $nombreUnico,
+                        $tipoMimeValidado,
+                        $configuracion
+                    );
+                    return $nombreUnico;
                 } catch (Throwable $excepcion) {
                     error_log('Falló la carga de imagen a S3; se usará almacenamiento local.');
                 }
@@ -64,13 +69,13 @@ final class AlmacenImagenes
         return 'assets/uploads/' . $nombreSeguro;
     }
 
-    // Sube un objeto con PutObject y devuelve su URL pública configurada.
+    // Sube un objeto privado con PutObject usando la firma AWS SigV4.
     public static function subirObjetoS3(
         string $rutaArchivo,
         string $clave,
         string $tipoMime,
         ?array $configuracion = null
-    ): string {
+    ): void {
         $configuracion = $configuracion ?? self::obtenerConfiguracion();
         self::validarConfiguracionS3($configuracion);
 
@@ -91,7 +96,7 @@ final class AlmacenImagenes
             'PUT',
             $clave,
             '',
-            ['content-type' => $tipoMime, 'x-amz-acl' => 'public-read'],
+            ['content-type' => $tipoMime],
             $cuerpo,
             $configuracion
         );
@@ -100,46 +105,48 @@ final class AlmacenImagenes
             throw new RuntimeException(self::mensajeErrorHttp('PutObject', $resultado));
         }
 
-        return rtrim($configuracion['S3_URL_PUBLICA'], '/') . '/' . self::codificarClave($clave);
     }
 
-    // Elimina un objeto de prueba con la misma firma AWS SigV4.
-    public static function borrarObjetoS3(string $clave, ?array $configuracion = null): array
+    // Recupera un objeto privado del directorio productos mediante GetObject firmado.
+    public static function obtenerImagenS3(string $claveArchivo, ?array $configuracion = null): array
     {
-        $configuracion = $configuracion ?? self::obtenerConfiguracion();
-        self::validarConfiguracionS3($configuracion);
-
-        return self::enviarSolicitudS3('DELETE', $clave, '', [], '', $configuracion);
-    }
-
-    // Aplica una política pública de lectura a todos los objetos del bucket para diagnóstico.
-    public static function aplicarPoliticaLecturaPublica(?array $configuracion = null): array
-    {
-        $configuracion = $configuracion ?? self::obtenerConfiguracion();
-        self::validarConfiguracionS3($configuracion);
-
-        $politica = json_encode([
-            'Version' => '2012-10-17',
-            'Statement' => [[
-                'Effect' => 'Allow',
-                'Principal' => '*',
-                'Action' => 's3:GetObject',
-                'Resource' => 'arn:aws:s3:::' . $configuracion['S3_BUCKET'] . '/*',
-            ]],
-        ], JSON_UNESCAPED_SLASHES);
-
-        if ($politica === false) {
-            throw new RuntimeException('No fue posible preparar la política del bucket.');
+        if (!self::esClaveProductoSegura($claveArchivo)) {
+            throw new InvalidArgumentException('La clave de imagen no es válida.');
         }
 
-        return self::enviarSolicitudS3(
-            'PUT',
+        $configuracion = $configuracion ?? self::obtenerConfiguracion();
+        $resultado = self::enviarSolicitudS3(
+            'GET',
+            'productos/' . $claveArchivo,
             '',
-            'policy=',
-            ['content-type' => 'application/json'],
-            $politica,
+            [],
+            '',
             $configuracion
         );
+
+        if ($resultado['codigo'] !== 200) {
+            throw new RuntimeException(self::mensajeErrorHttp('GetObject', $resultado));
+        }
+
+        $tipoContenido = $resultado['encabezados']['content-type'] ?? '';
+        if (!in_array(strtolower(trim(explode(';', $tipoContenido)[0])), ['image/jpeg', 'image/png'], true)) {
+            throw new RuntimeException('El objeto S3 no tiene un tipo de imagen permitido.');
+        }
+
+        $tipoContenidoCanonico = strtolower(trim(explode(';', $tipoContenido)[0]));
+
+        return [
+            'contenido' => $resultado['respuesta'],
+            'tipo_contenido' => $tipoContenidoCanonico,
+        ];
+    }
+
+    // Valida que la clave corresponda a un archivo de producto sin rutas ni segmentos relativos.
+    public static function esClaveProductoSegura(string $claveArchivo): bool
+    {
+        return strlen($claveArchivo) <= 255
+            && !str_contains($claveArchivo, '..')
+            && preg_match('/\Aproducto_[A-Za-z0-9._-]+\.(?:jpg|jpeg|png)\z/i', $claveArchivo) === 1;
     }
 
     // Calcula la firma AWS SigV4 a partir de los datos canónicos de una solicitud.
@@ -210,7 +217,7 @@ final class AlmacenImagenes
     // Comprueba los parámetros S3 necesarios antes de crear cualquier solicitud firmada.
     private static function validarConfiguracionS3(array $configuracion): void
     {
-        foreach (['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_KEY_ID', 'S3_SECRET', 'S3_URL_PUBLICA'] as $clave) {
+        foreach (['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_KEY_ID', 'S3_SECRET'] as $clave) {
             if (!isset($configuracion[$clave]) || $configuracion[$clave] === '') {
                 throw new RuntimeException('La configuración de S3 está incompleta.');
             }
@@ -283,6 +290,22 @@ final class AlmacenImagenes
             CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
+        $encabezadosRespuesta = [];
+        curl_setopt(
+            $conexion,
+            CURLOPT_HEADERFUNCTION,
+            static function ($conexion, string $linea) use (&$encabezadosRespuesta): int {
+                $longitud = strlen($linea);
+                $separador = strpos($linea, ':');
+                if ($separador !== false) {
+                    $nombre = strtolower(trim(substr($linea, 0, $separador)));
+                    $encabezadosRespuesta[$nombre] = trim(substr($linea, $separador + 1));
+                }
+
+                return $longitud;
+            }
+        );
+
         $respuesta = curl_exec($conexion);
         if ($respuesta === false) {
             $mensajeCurl = curl_error($conexion);
@@ -293,7 +316,11 @@ final class AlmacenImagenes
         $codigoHttp = (int) curl_getinfo($conexion, CURLINFO_HTTP_CODE);
         curl_close($conexion);
 
-        return ['codigo' => $codigoHttp, 'respuesta' => (string) $respuesta];
+        return [
+            'codigo' => $codigoHttp,
+            'respuesta' => (string) $respuesta,
+            'encabezados' => $encabezadosRespuesta,
+        ];
     }
 
     // Construye la URL estilo path que acepta el endpoint regional de IDrive e2.

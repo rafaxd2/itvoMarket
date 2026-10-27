@@ -117,7 +117,12 @@
                     <?php foreach ($productos as $producto): ?>
                         <div class="col-md-6 col-lg-4">
                             <div class="product-card h-100 <?= isset($productoRecienteId) && (int) $productoRecienteId === (int) $producto['id_producto'] ? 'product-card--just-published' : ''; ?>">
-                                <img src="<?= htmlspecialchars($producto['imagen_producto'], ENT_QUOTES, 'UTF-8'); ?>" class="card-img-top" alt="<?= htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>" style="height: 220px; object-fit: cover;">
+                                <?php $urlImagenProducto = CatalogoController::obtenerUrlImagenProducto($producto['imagen_producto'] ?? null); ?>
+                                <?php if ($urlImagenProducto !== null): ?>
+                                    <img src="<?= htmlspecialchars($urlImagenProducto, ENT_QUOTES, 'UTF-8'); ?>" class="card-img-top" alt="<?= htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>" style="height: 220px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="catalog-image-placeholder" aria-hidden="true"><i class="bi bi-image"></i></div>
+                                <?php endif; ?>
                                 <div class="card-body">
                                     <h5 class="card-title"><?= htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?></h5>
                                     <p class="product-price fw-bold mb-2">$<?= htmlspecialchars((string) $producto['precio'], ENT_QUOTES, 'UTF-8'); ?></p>

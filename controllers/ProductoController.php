@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/CatalogoController.php';
 require_once __DIR__ . '/../services/AlmacenImagenes.php';
 
 // Controlador encargado de publicar productos desde la cuenta de un vendedor.

@@ -44,7 +44,7 @@ Para desarrollar sin enviar correo ni requerir internet, deja `MAIL_MODO=log`. L
 
 PHPMailer debe estar disponible en `libs/PHPMailer/PHPMailer.php`, `libs/PHPMailer/SMTP.php` y `libs/PHPMailer/Exception.php`; se incluye desde esos archivos y no requiere Composer.
 
-Para almacenar las imágenes en IDrive e2, configura `ALMACEN_IMAGENES=s3` y agrega a `.env` el endpoint regional, región, nombre del bucket, URL pública, `S3_KEY_ID` y `S3_SECRET` de una clave con permisos para PutObject y ACL pública. La extensión cURL de PHP debe estar habilitada. Las claves se mantienen exclusivamente en `.env`. En modo `s3`, las imágenes se suben con acceso público de lectura; si S3 falla, la aplicación las guarda en `public/assets/uploads/`. Usa `ALMACEN_IMAGENES=local` para desactivar el bucket.
+Para almacenar las imágenes en IDrive e2, configura `ALMACEN_IMAGENES=s3` y agrega a `.env` el endpoint regional, región, nombre del bucket, URL pública, `S3_KEY_ID` y `S3_SECRET` de una clave con permisos para PutObject y GetObject. La extensión cURL de PHP debe estar habilitada. Las claves se mantienen exclusivamente en `.env`. El bucket se mantiene privado: la aplicación guarda la clave del objeto y sirve las imágenes mediante la ruta autenticada `index.php?accion=imagen&k=CLAVE`; las URL antiguas del bucket también se resuelven mediante esa ruta. Si la carga a S3 falla, la aplicación guarda la imagen en `public/assets/uploads/`. Usa `ALMACEN_IMAGENES=local` para desactivar el bucket.
 
 2. Inicia el servidor local desde la raíz del proyecto con PHP de XAMPP:
 

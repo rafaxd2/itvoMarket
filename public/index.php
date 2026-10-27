@@ -93,6 +93,9 @@ switch ($accion) {
         AuthController::requerirRol('comprador', 'panel.php?rol=vendedor');
         (new CatalogoController())->mostrarDetalle();
         break;
+    case 'imagen':
+        (new CatalogoController())->mostrarImagen();
+        break;
     case 'cambiarRol':
         $controlador->cambiarRol();
         break;

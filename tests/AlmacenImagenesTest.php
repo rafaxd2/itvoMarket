@@ -6,6 +6,12 @@ use PHPUnit\Framework\TestCase;
 
 final class AlmacenImagenesTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        require_once __DIR__ . '/../controllers/CatalogoController.php';
+    }
+
     public function testFirmaSigV4CoincideConVectorDeReferenciaDeAwsS3(): void
     {
         $hashCuerpo = hash('sha256', '');
@@ -78,6 +84,47 @@ final class AlmacenImagenesTest extends TestCase
             if (is_file($archivoTemporal)) {
                 unlink($archivoTemporal);
             }
+            foreach ($valoresAnteriores as $nombre => $valorAnterior) {
+                if ($valorAnterior === null) {
+                    putenv($nombre);
+                } else {
+                    putenv($nombre . '=' . $valorAnterior);
+                }
+            }
+        }
+    }
+
+    public function testClaveDeImagenPrivadaSoloAceptaNombreDeProductoSinRuta(): void
+    {
+        self::assertTrue(AlmacenImagenes::esClaveProductoSegura('producto_769c79fc633155e2921f3e9f383f6ddd.png'));
+        self::assertTrue(AlmacenImagenes::esClaveProductoSegura('producto_769c79fc633155e2921f3e9f383f6ddd.12345678.jpeg'));
+        self::assertFalse(AlmacenImagenes::esClaveProductoSegura('../secreto.png'));
+        self::assertFalse(AlmacenImagenes::esClaveProductoSegura('productos/producto_769c79fc633155e2921f3e9f383f6ddd.png'));
+        self::assertFalse(AlmacenImagenes::esClaveProductoSegura('producto_../../secreto.png'));
+    }
+
+    public function testUrlCompletaDeObjetoS3AnteriorUsaLaRutaPrivada(): void
+    {
+        $nombresVariables = ['S3_URL_PUBLICA', 'S3_ENDPOINT'];
+        $valoresAnteriores = [];
+        foreach ($nombresVariables as $nombre) {
+            $anterior = getenv($nombre);
+            $valoresAnteriores[$nombre] = $anterior === false ? null : $anterior;
+        }
+
+        putenv('S3_URL_PUBLICA=https://itvomarket-imagenes.s3.us-west-2.idrivee2.com');
+        putenv('S3_ENDPOINT=https://s3.us-west-2.idrivee2.com');
+
+        try {
+            $url = CatalogoController::obtenerUrlImagenProducto(
+                'https://itvomarket-imagenes.s3.us-west-2.idrivee2.com/productos/producto_769c79fc633155e2921f3e9f383f6ddd.png'
+            );
+
+            self::assertSame(
+                'index.php?accion=imagen&k=producto_769c79fc633155e2921f3e9f383f6ddd.png',
+                $url
+            );
+        } finally {
             foreach ($valoresAnteriores as $nombre => $valorAnterior) {
                 if ($valorAnterior === null) {
                     putenv($nombre);
