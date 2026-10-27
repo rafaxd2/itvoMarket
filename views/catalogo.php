@@ -115,6 +115,20 @@
                 <section class="catalog-grid" aria-label="Publicaciones disponibles">
                     <?php foreach ($publicaciones as $publicacion): ?>
                         <?php $urlImagen = CatalogoController::obtenerUrlImagenProducto($publicacion['imagen_producto'] ?? null); ?>
+                        <?php
+                        $parametrosDetalle = [
+                            'accion' => 'producto',
+                            'id' => (int) $publicacion['id_producto'],
+                        ];
+                        if ($texto !== '') {
+                            $parametrosDetalle['q'] = $texto;
+                        }
+                        if ($idCategoria !== null) {
+                            $parametrosDetalle['categoria'] = $idCategoria;
+                        }
+                        $urlDetalle = 'index.php?' . http_build_query($parametrosDetalle);
+                        ?>
+                        <a class="catalog-product-link" href="<?= htmlspecialchars($urlDetalle, ENT_QUOTES, 'UTF-8'); ?>">
                         <article class="catalog-product clay-card">
                             <div class="catalog-image">
                                 <?php if ($urlImagen !== null): ?>
@@ -139,6 +153,7 @@
                                 <p class="catalog-product-detail">Vendedor: <?= htmlspecialchars($publicacion['nombre_vendedor'], ENT_QUOTES, 'UTF-8'); ?></p>
                             </div>
                         </article>
+                        </a>
                     <?php endforeach; ?>
                 </section>
             <?php endif; ?>

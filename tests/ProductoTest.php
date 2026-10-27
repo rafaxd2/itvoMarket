@@ -39,9 +39,23 @@ final class ProductoTest extends ModeloTestCase
                 id_usuario INTEGER NOT NULL
             )'
         );
+        $this->conexion->exec(
+            'CREATE TABLE estado_producto (
+                id_estado INTEGER PRIMARY KEY,
+                nombre_estado TEXT NOT NULL
+            )'
+        );
+        $this->conexion->exec(
+            'CREATE TABLE condicion_producto (
+                id_condicion INTEGER PRIMARY KEY,
+                nombre_condicion TEXT NOT NULL
+            )'
+        );
         $this->conexion->exec("INSERT INTO categorias (tipo_categoria) VALUES ('Comida'), ('Bebida')");
         $this->conexion->exec("INSERT INTO usuario (id_usuario, nombre) VALUES (1, 'Ana')");
         $this->conexion->exec("INSERT INTO vendedores (id_vendedor, id_usuario) VALUES (1, 1)");
+        $this->conexion->exec("INSERT INTO estado_producto (id_estado, nombre_estado) VALUES (1, 'Disponible')");
+        $this->conexion->exec("INSERT INTO condicion_producto (id_condicion, nombre_condicion) VALUES (1, 'Nuevo')");
     }
 
     public function testCrearProductoValido(): void
@@ -171,6 +185,30 @@ final class ProductoTest extends ModeloTestCase
         $productos = Producto::listarCatalogo('', null);
 
         self::assertSame(['Agua fresca', 'Torta'], array_column($productos, 'nombre'));
+    }
+
+    public function testDetalleCatalogoDevuelveProductoVendedorEstadoYCondicion(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol y queso', 1);
+
+        $producto = Producto::buscarDetalleCatalogo('1');
+
+        self::assertNotNull($producto);
+        self::assertSame('Torta', $producto['nombre']);
+        self::assertSame('Comida', $producto['categoria']);
+        self::assertSame('Ana', $producto['nombre_vendedor']);
+        self::assertSame('Disponible', $producto['estado']);
+        self::assertSame('Nuevo', $producto['condicion']);
+    }
+
+    public function testDetalleCatalogoDevuelveNullCuandoElProductoNoExiste(): void
+    {
+        self::assertNull(Producto::buscarDetalleCatalogo(999));
+    }
+
+    public function testDetalleCatalogoRechazaIdNoNumerico(): void
+    {
+        self::assertNull(Producto::buscarDetalleCatalogo('no-es-un-id'));
     }
 
     private function insertarProductoCatalogo(int $id, string $nombre, string $descripcion, int $idCategoria): void

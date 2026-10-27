@@ -104,6 +104,34 @@
     background: #FFFFFF;
 }
 
+.catalog-product-link {
+    display: block;
+    border-radius: 24px;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.catalog-product-link:focus-visible {
+    outline: 3px solid rgba(46, 125, 91, 0.55);
+    outline-offset: 4px;
+}
+
+.catalog-product-link:hover .catalog-product,
+.catalog-product-link:focus-visible .catalog-product {
+    box-shadow:
+        0 14px 28px rgba(31, 42, 36, 0.18),
+        inset 0 2px 3px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 6px rgba(31, 42, 36, 0.05);
+    transform: translateY(-3px);
+}
+
+.catalog-product {
+    transition:
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
 .catalog-image {
     position: relative;
     display: grid;
@@ -198,6 +226,103 @@
     color: #6B7A72;
 }
 
+.product-back-link {
+    margin-bottom: 1.25rem;
+}
+
+.product-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+.product-detail-image {
+    aspect-ratio: 1 / 1;
+    align-self: start;
+    border-radius: 24px;
+}
+
+.product-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-detail-image .catalog-image-placeholder {
+    font-size: 4rem;
+}
+
+.product-detail-content {
+    min-width: 0;
+    padding: 0.5rem 0;
+}
+
+.product-detail-content h1,
+.product-detail-section h2,
+.product-detail-status h2 {
+    font-family: 'Baloo 2', Arial, sans-serif;
+}
+
+.product-detail-content h1 {
+    margin-bottom: 0.75rem;
+    color: #1F2A24;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.product-detail-category {
+    margin-bottom: 0.35rem;
+    color: #6B7A72;
+    font-size: 0.9rem;
+}
+
+.product-detail-price {
+    margin-bottom: 1.5rem;
+}
+
+.product-detail-section {
+    margin: 0 0 1.25rem;
+}
+
+.product-detail-section h2,
+.product-detail-status h2 {
+    margin-bottom: 0.45rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.product-detail-section p,
+.product-detail-vendor,
+.product-detail-status p {
+    margin-bottom: 0.4rem;
+    color: #6B7A72;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.product-detail-vendor span,
+.product-detail-status p span {
+    color: #1F2A24;
+    font-weight: 700;
+}
+
+.product-detail-status {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(31, 42, 36, 0.1);
+}
+
+.product-unavailable {
+    margin-top: 2rem;
+}
+
+.product-unavailable h1 {
+    margin-bottom: 0.5rem;
+    font-family: 'Baloo 2', Arial, sans-serif;
+    font-size: 1.7rem;
+}
+
 @media (max-width: 991.98px) {
     .catalog-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -218,6 +343,15 @@
     .catalog-search-button {
         flex-basis: auto;
         width: 100%;
+    }
+
+    .product-detail {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .product-detail-image {
+        aspect-ratio: 4 / 3;
     }
 }
 

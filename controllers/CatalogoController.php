@@ -8,6 +8,38 @@ require_once __DIR__ . '/AuthController.php';
 
 class CatalogoController
 {
+    public function mostrarDetalle(): void
+    {
+        AuthController::requerirSesion();
+        AuthController::requerirRol('comprador', 'panel.php?rol=vendedor');
+
+        $idProducto = $_GET['id'] ?? null;
+        $texto = $this->normalizarTexto($_GET['q'] ?? '');
+        $categoriaSolicitada = filter_var($_GET['categoria'] ?? null, FILTER_VALIDATE_INT);
+        $idCategoria = $categoriaSolicitada !== false && $categoriaSolicitada !== null && $categoriaSolicitada > 0
+            ? $categoriaSolicitada
+            : null;
+        $producto = null;
+        $error = '';
+        $parametrosRegreso = ['accion' => 'catalogo'];
+
+        if ($texto !== '') {
+            $parametrosRegreso['q'] = $texto;
+        }
+        if ($idCategoria !== null) {
+            $parametrosRegreso['categoria'] = $idCategoria;
+        }
+        $urlRegreso = 'index.php?' . http_build_query($parametrosRegreso);
+
+        try {
+            $producto = Producto::buscarDetalleCatalogo($idProducto);
+        } catch (PDOException $exception) {
+            $error = 'No fue posible cargar la publicación. Inténtalo nuevamente.';
+        }
+
+        include __DIR__ . '/../views/detalle_producto.php';
+    }
+
     public function mostrar(): void
     {
         AuthController::requerirSesion();

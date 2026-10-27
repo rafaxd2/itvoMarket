@@ -100,6 +100,35 @@ class Producto
         return $consulta->fetchAll();
     }
 
+    // Busca los datos de lectura de una publicación y rechaza identificadores que no sean enteros positivos.
+    public static function buscarDetalleCatalogo(mixed $idProducto): ?array
+    {
+        $idValidado = filter_var($idProducto, FILTER_VALIDATE_INT);
+
+        if ($idValidado === false || $idValidado === null || $idValidado < 1) {
+            return null;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+        $consulta = $conexion->prepare(
+            'SELECT p.id_producto, p.nombre, p.descripcion_producto, p.precio, p.imagen_producto,
+                c.tipo_categoria AS categoria, u.nombre AS nombre_vendedor,
+                e.nombre_estado AS estado, co.nombre_condicion AS condicion
+            FROM productos p
+            INNER JOIN categorias c ON c.id_categoria = p.id_categoria
+            INNER JOIN vendedores v ON v.id_vendedor = p.id_vendedor
+            INNER JOIN usuario u ON u.id_usuario = v.id_usuario
+            LEFT JOIN estado_producto e ON e.id_estado = p.id_estado
+            LEFT JOIN condicion_producto co ON co.id_condicion = p.id_condicion
+            WHERE p.id_producto = :id_producto
+            LIMIT 1'
+        );
+        $consulta->execute([':id_producto' => $idValidado]);
+        $producto = $consulta->fetch();
+
+        return $producto !== false ? $producto : null;
+    }
+
     public static function hayPublicaciones(): bool
     {
         $conexion = obtenerConexionBaseDatos();
