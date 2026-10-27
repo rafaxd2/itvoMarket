@@ -89,6 +89,7 @@ class AuthController
             return;
         }
 
+        self::limpiarEstadoRecuperacion();
         $correoNormalizado = normalizarCorreoGmail($correoOriginal);
         if ($correoNormalizado === null) {
             $errores['correo'] = 'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)';
@@ -97,21 +98,40 @@ class AuthController
         }
 
         $correo = $correoNormalizado;
-        $_SESSION['recuperacion_correo'] = $correo;
-        $_SESSION['recuperacion_intentos'] = 0;
-        unset(
-            $_SESSION['recuperacion_bloqueada'],
-            $_SESSION['recuperacion_codigo_verificado'],
-            $_SESSION['recuperacion_hash_verificado']
-        );
-        $_SESSION['recuperacion_ultimo_envio'] = time();
+        if (!self::registrarSolicitudCodigo()) {
+            $errores['general'] = 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.';
+            $this->mostrarFormularioRestablecimiento($correo, $errores);
+            return;
+        }
 
         try {
-            $this->enviarCodigoRecuperacion($correo);
+            $usuario = Usuario::buscarPorCorreo($correo);
+            if ($usuario === null) {
+                $errores['correo'] = 'Este correo no está registrado. Verifica que sea el mismo con el que creaste tu cuenta.';
+                $this->mostrarFormularioRestablecimiento($correo, $errores);
+                return;
+            }
+
+            if (!$this->enviarCodigoRecuperacion($correo, $usuario)) {
+                $errores['general'] = 'No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.';
+                $this->mostrarFormularioRestablecimiento($correo, $errores);
+                return;
+            }
+
+            $_SESSION['recuperacion_correo'] = $correo;
+            $_SESSION['recuperacion_solicitud_valida'] = true;
+            $_SESSION['recuperacion_intentos'] = 0;
+            $_SESSION['recuperacion_ultimo_envio'] = time();
         } catch (PDOException $excepcion) {
             error_log('Error de base de datos al solicitar recuperación: ' . $excepcion->getMessage());
+            $errores['general'] = 'No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.';
+            $this->mostrarFormularioRestablecimiento($correo, $errores);
+            return;
         } catch (Throwable $excepcion) {
             error_log('Error al procesar solicitud de recuperación: ' . $excepcion->getMessage());
+            $errores['general'] = 'No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.';
+            $this->mostrarFormularioRestablecimiento($correo, $errores);
+            return;
         }
 
         header('Location: index.php?accion=restablecer');
@@ -132,7 +152,8 @@ class AuthController
             ? $_SESSION['recuperacion_correo']
             : '';
 
-        if ($correo === '') {
+        if ($correo === '' || empty($_SESSION['recuperacion_solicitud_valida'])) {
+            self::limpiarEstadoRecuperacion();
             header('Location: index.php?accion=olvide');
             return;
         }
@@ -166,7 +187,8 @@ class AuthController
             : '';
         $codigo = is_string($_POST['codigo'] ?? null) ? trim($_POST['codigo']) : '';
 
-        if ($correo === '') {
+        if ($correo === '' || empty($_SESSION['recuperacion_solicitud_valida'])) {
+            self::limpiarEstadoRecuperacion();
             header('Location: index.php?accion=olvide');
             return;
         }
@@ -217,6 +239,12 @@ class AuthController
     public function reenviarCodigoRecuperacion(): void
     {
         self::iniciarSesion();
+        if (empty($_SESSION['recuperacion_solicitud_valida'])) {
+            self::limpiarEstadoRecuperacion();
+            header('Location: index.php?accion=olvide');
+            return;
+        }
+
         $correoOriginal = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
@@ -238,8 +266,23 @@ class AuthController
             return;
         }
 
+        if (!self::registrarSolicitudCodigo()) {
+            $_SESSION['recuperacion_mensaje_reenvio'] = 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+
         try {
-            $envioExitoso = $this->enviarCodigoRecuperacion($correo);
+            $usuario = Usuario::buscarPorCorreo($correo);
+            if ($usuario === null) {
+                $_SESSION['correo_recuperacion_edicion'] = $correo;
+                $_SESSION['correo_recuperacion_error_edicion'] = 'Este correo no está registrado. Verifica que sea el mismo con el que creaste tu cuenta.';
+                self::limpiarEstadoRecuperacion();
+                header('Location: index.php?accion=olvide');
+                return;
+            }
+
+            $envioExitoso = $this->enviarCodigoRecuperacion($correo, $usuario);
             $_SESSION['recuperacion_ultimo_envio'] = time();
             $_SESSION['recuperacion_intentos'] = 0;
             unset(
@@ -283,6 +326,12 @@ class AuthController
     public function mostrarNuevaContrasena(): void
     {
         self::iniciarSesion();
+        if (empty($_SESSION['recuperacion_solicitud_valida'])) {
+            self::limpiarEstadoRecuperacion();
+            header('Location: index.php?accion=olvide');
+            return;
+        }
+
         $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
@@ -338,7 +387,11 @@ class AuthController
             ? $_POST['confirmar_contrasena']
             : '';
 
-        if ($correo === '' || empty($_SESSION['recuperacion_codigo_verificado'])) {
+        if (
+            $correo === ''
+            || empty($_SESSION['recuperacion_solicitud_valida'])
+            || empty($_SESSION['recuperacion_codigo_verificado'])
+        ) {
             header('Location: index.php?accion=restablecer');
             return;
         }
@@ -399,18 +452,40 @@ class AuthController
         }
     }
 
-    private function enviarCodigoRecuperacion(string $correo): bool
+    private function enviarCodigoRecuperacion(string $correo, array $usuario): bool
     {
         $codigo = Usuario::generarCodigoRestablecimiento($correo);
         if ($codigo === null) {
-            return true;
+            return false;
         }
 
-        $usuario = Usuario::buscarPorCorreo($correo);
-        if ($usuario !== null) {
-            return CorreoServicio::enviarRecuperacion($correo, (string) $usuario['nombre'], $codigo);
+        $envioExitoso = CorreoServicio::enviarRecuperacion($correo, (string) $usuario['nombre'], $codigo);
+        if (!$envioExitoso) {
+            Usuario::invalidarCodigoRestablecimiento($correo);
         }
 
+        return $envioExitoso;
+    }
+
+    // Limita a cinco las solicitudes de código realizadas durante los últimos quince minutos.
+    private static function registrarSolicitudCodigo(): bool
+    {
+        $ahora = time();
+        $solicitudes = $_SESSION['recuperacion_solicitudes'] ?? [];
+        $solicitudes = is_array($solicitudes)
+            ? array_values(array_filter(
+                $solicitudes,
+                static fn ($fecha): bool => is_int($fecha) && $fecha > $ahora - 900
+            ))
+            : [];
+
+        if (count($solicitudes) >= 5) {
+            $_SESSION['recuperacion_solicitudes'] = $solicitudes;
+            return false;
+        }
+
+        $solicitudes[] = $ahora;
+        $_SESSION['recuperacion_solicitudes'] = $solicitudes;
         return true;
     }
 
@@ -418,6 +493,7 @@ class AuthController
     {
         unset(
             $_SESSION['recuperacion_correo'],
+            $_SESSION['recuperacion_solicitud_valida'],
             $_SESSION['recuperacion_intentos'],
             $_SESSION['recuperacion_ultimo_envio'],
             $_SESSION['recuperacion_bloqueada'],

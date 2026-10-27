@@ -55,18 +55,22 @@ Texto del panel lateral: se usa el texto de cada wireframe; el párrafo común e
 
 **1. "Olvidé mi contraseña"** (solicitud de código)
 - Subtítulo: "Solicita un código temporal para recuperar el acceso a tu cuenta."
-- Tarjeta "Recuperación de contraseña": campo "Correo registrado" (placeholder `tu.correo@ejemplo.com`), texto de ayuda "Si el correo está asociado a una cuenta, recibirás un código para restablecer tu contraseña.", botón primario "Solicitar código de recuperación", enlace "Volver a inicio de sesión".
+- Tarjeta "Recuperación de contraseña": campo "Correo registrado" (placeholder `nombre@gmail.com`), texto de ayuda "Usa el mismo correo Gmail con el que creaste tu cuenta.", botón primario "Solicitar código de recuperación", enlace "Volver a inicio de sesión".
 - Panel: "Usa el correo con el que te registraste. El código te permitirá elegir una nueva contraseña."
 - Error de formato o campo vacío: borde y sombra en rojo `#D64545`, mensaje de ayuda junto al campo, desplazamiento lateral único (regla de Sprint 1).
-- **Después de enviar**: guardar el correo en la sesión y pasar a "Revisa tu correo". En esa pantalla mostrar el correo indicado y el texto neutral de recuperación, sin distinguir si la cuenta existe.
+- Correo no registrado: conservar el valor y mostrar "Este correo no está registrado. Verifica que sea el mismo con el que creaste tu cuenta."; no enviar correo ni avanzar a la pantalla de código.
+- Al exceder cinco solicitudes de código en quince minutos por sesión, mostrar "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
+- Si falla la base de datos o el envío, mostrar un mensaje genérico sin detalles técnicos ni errores fatales.
+- **Después de enviar**: consultar el correo; si existe, generar y enviar el código, guardar una solicitud válida en la sesión y pasar a "Revisa tu correo".
 
 **2. "Revisa tu correo"** (verificación)
 - Subtítulo: "Solicitud registrada. El siguiente paso es ingresar tu código de recuperación."
-- Tarjeta: recuadro clay hundido "Correo indicado" que muestra el correo de la solicitud; texto "Si está asociado a una cuenta, recibirás un mensaje con un código de recuperación. Ingrésalo aquí para crear una nueva contraseña."; etiqueta "Código de recuperación".
+- Tarjeta: recuadro clay hundido "Correo indicado" que muestra el correo de la solicitud; texto "Enviamos un código de 6 dígitos a este correo. Ingrésalo aquí para crear una nueva contraseña."; etiqueta "Código de recuperación".
 - Mostrar seis casillas individuales clay, cada una de un dígito (`inputmode=numeric`, `maxlength=1`); la primera usa `autocomplete=one-time-code` y recibe foco al cargar. Al escribir, solo aceptar números y avanzar el foco; Backspace vuelve a la casilla anterior; pegar seis dígitos los reparte en las casillas. Un campo oculto `codigo` combina las seis casillas antes de enviar. Sin JavaScript se muestra un campo de texto de seis dígitos como respaldo.
 - Ayuda: "Ingresa los 6 dígitos que recibiste en tu correo." y "¿No lo encuentras? Revisa la carpeta de correo no deseado antes de solicitar otro código."
 - Botón primario "Verificar código". Debajo, enlaces "Reenviar código", "Corregir correo" y "Volver a inicio de sesión".
-- Reenvío: mínimo 60 segundos entre solicitudes según `$_SESSION`; al reenvío permitido, reemplazar el código previo y mostrar "Te enviamos un código nuevo". Mientras dure la espera, indicar cuántos segundos faltan. "Corregir correo" regresa a la pantalla de solicitud con el correo previo y limpia el estado de recuperación.
+- Reenvío: requiere una solicitud válida en sesión, correo registrado y al menos 60 segundos desde el envío anterior; además respeta el máximo de cinco solicitudes de código en quince minutos por sesión. Al reenvío permitido, reemplazar el código previo y mostrar "Te enviamos un código nuevo". Mientras dure la espera, indicar cuántos segundos faltan. "Corregir correo" regresa a la pantalla de solicitud con el correo previo y limpia el estado de recuperación; el correo corregido se valida y consulta antes de enviar.
+- El acceso directo a la pantalla de código sin una solicitud válida guardada en la sesión regresa al formulario de solicitud.
 - Código incorrecto o vencido: mostrar "Código incorrecto o vencido" en esta misma pantalla, conservar el correo y permitir solicitar un código nuevo. Contar fallos en sesión; al quinto, invalidar `token_reset` en la base.
 - Panel: "Ingresa el código que enviamos a tu correo para comprobar que la cuenta es tuya. Después podrás elegir una nueva contraseña." Mantener el párrafo compartido de los paneles de autenticación.
 

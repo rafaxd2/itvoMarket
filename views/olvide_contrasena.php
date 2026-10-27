@@ -28,6 +28,9 @@
                 <p class="recovery-subtitle">Solicita un código temporal para recuperar el acceso a tu cuenta.</p>
 
                 <h2 class="recovery-form-title">Recuperación de contraseña</h2>
+                <?php if (!empty($errores['general'])): ?>
+                    <div class="alert alert-danger" role="alert"><?= htmlspecialchars($errores['general'], ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
                 <form method="post" action="index.php?accion=olvide">
                     <div class="mb-3">
                         <label for="correo-recuperacion" class="form-label">Correo registrado</label>
@@ -48,7 +51,7 @@
                             <div id="error-correo-recuperacion" class="invalid-feedback"><?= htmlspecialchars($errores['correo'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
                         <div id="ayuda-correo-recuperacion" class="form-text recovery-help">
-                            Si el correo está asociado a una cuenta, recibirás un código para restablecer tu contraseña.
+                            Usa el mismo correo Gmail con el que creaste tu cuenta.
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary clay-button w-100">Solicitar código de recuperación</button>

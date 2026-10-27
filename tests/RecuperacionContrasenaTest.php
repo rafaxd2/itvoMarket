@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 final class RecuperacionContrasenaTest extends ModeloTestCase
 {
+    private string|false $modoCorreoAnterior = false;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->modoCorreoAnterior = getenv('MAIL_MODO');
+        putenv('MAIL_MODO=log');
         $this->conexion->exec(
             'CREATE TABLE usuario (
                 id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,6 +36,11 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
     protected function tearDown(): void
     {
         $_SESSION = [];
+        if ($this->modoCorreoAnterior === false) {
+            putenv('MAIL_MODO');
+        } else {
+            putenv('MAIL_MODO=' . $this->modoCorreoAnterior);
+        }
         parent::tearDown();
     }
 
@@ -46,6 +55,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         $codigoCorrecto = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
         $codigoIncorrecto = $codigoCorrecto === '000000' ? '000001' : '000000';
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_SESSION['recuperacion_intentos'] = 0;
         $_POST = ['codigo' => $codigoIncorrecto];
 
@@ -71,6 +81,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         ]);
         $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_POST = ['codigo' => $codigo];
 
         (new AuthController())->verificarCodigoRecuperacion();
@@ -94,6 +105,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
         $hashCodigo = hash('sha256', $idUsuario . ':' . $codigo);
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_SESSION['recuperacion_codigo_verificado'] = true;
         $_SESSION['recuperacion_hash_verificado'] = $hashCodigo;
         $_POST = [
@@ -114,6 +126,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
     public function testPantallaCodigoTieneSeisCasillasYCorreoIndicado(): void
     {
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
 
         ob_start();
         (new AuthController())->mostrarRestablecer();
@@ -140,6 +153,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         ]);
         $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_SESSION['recuperacion_codigo_verificado'] = true;
         $_SESSION['recuperacion_hash_verificado'] = hash('sha256', $idUsuario . ':' . $codigo);
 
@@ -170,6 +184,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         $codigo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
         $hashOriginal = hash('sha256', 1 . ':' . $codigo);
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_SESSION['recuperacion_ultimo_envio'] = time();
 
         (new AuthController())->reenviarCodigoRecuperacion();
@@ -214,6 +229,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
     {
         $this->conexion->exec('DROP TABLE usuario');
         $_SESSION['recuperacion_correo'] = 'a@gmail.com.xd';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
 
         (new AuthController())->reenviarCodigoRecuperacion();
 
@@ -242,24 +258,120 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         self::assertStringContainsString('value="a@gmail.com.xd"', $html);
     }
 
-    public function testCorreoInexistentePasaALaPantallaDeCodigoConAvisoNeutral(): void
+    public function testCorreoRegistradoGeneraCodigoYAvanzaALaPantallaDeCodigo(): void
     {
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-        $_POST = ['correo' => 'Desconocido@Gmail.com '];
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+        $_POST = ['correo' => 'Ana@Gmail.com '];
         (new AuthController())->solicitarRestablecimiento();
+
+        self::assertSame('ana@gmail.com', $_SESSION['recuperacion_correo']);
+        self::assertTrue($_SESSION['recuperacion_solicitud_valida']);
+        self::assertNotNull(Usuario::buscarPorCorreo('ana@gmail.com')['token_reset']);
 
         ob_start();
         (new AuthController())->mostrarRestablecer();
         $html = ob_get_clean();
 
         self::assertStringContainsString('Revisa tu correo', $html);
-        self::assertStringContainsString('Si está asociado a una cuenta, recibirás un mensaje con un código', $html);
-        self::assertSame('desconocido@gmail.com', $_SESSION['recuperacion_correo']);
+        self::assertStringContainsString(
+            'Enviamos un código de 6 dígitos a este correo. Ingrésalo aquí para crear una nueva contraseña.',
+            $html
+        );
+    }
+
+    public function testCorreoNoRegistradoNoEnviaCorreoNiGeneraCodigo(): void
+    {
+        $_POST = ['correo' => 'desconocido@gmail.com'];
+
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'Este correo no está registrado. Verifica que sea el mismo con el que creaste tu cuenta.',
+            $html
+        );
+        self::assertStringContainsString('value="desconocido@gmail.com"', $html);
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
+        self::assertArrayNotHasKey('recuperacion_solicitud_valida', $_SESSION);
+        self::assertSame(0, (int) $this->conexion->query('SELECT COUNT(*) FROM usuario')->fetchColumn());
+    }
+
+    public function testCorreoCorregidoNoRegistradoNoCreaUnaSolicitudDeRecuperacion(): void
+    {
+        $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
+        (new AuthController())->corregirCorreoRecuperacion();
+        $_POST = ['correo' => 'desconocido@gmail.com'];
+
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'Este correo no está registrado. Verifica que sea el mismo con el que creaste tu cuenta.',
+            $html
+        );
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
+        self::assertArrayNotHasKey('recuperacion_solicitud_valida', $_SESSION);
+    }
+
+    public function testErrorDeBaseDeDatosMuestraMensajeGenericoSinAvanzar(): void
+    {
+        $this->conexion->exec('DROP TABLE usuario');
+        $_POST = ['correo' => 'ana@gmail.com'];
+
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'No pudimos procesar la solicitud. Intenta de nuevo en unos minutos.',
+            $html
+        );
+        self::assertStringContainsString('value="ana@gmail.com"', $html);
+        self::assertArrayNotHasKey('recuperacion_solicitud_valida', $_SESSION);
+    }
+
+    public function testLimitaACincoSolicitudesDeCodigoCadaQuinceMinutos(): void
+    {
+        $_SESSION['recuperacion_solicitudes'] = array_fill(0, 5, time() - 10);
+        $_POST = ['correo' => 'ana@gmail.com'];
+
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+            $html
+        );
+        self::assertSame(5, count($_SESSION['recuperacion_solicitudes']));
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
+        self::assertSame(0, (int) $this->conexion->query('SELECT COUNT(*) FROM usuario')->fetchColumn());
+    }
+
+    public function testAccesoDirectoALaPantallaDeCodigoSinSolicitudValidaRegresaAlFormulario(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
+        ob_start();
+        (new AuthController())->mostrarRestablecer();
+        $html = ob_get_clean();
+
+        self::assertSame('', $html);
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
     }
 
     public function testCodigoIncorrectoMuestraMensajeNeutralSinRevelarLaCuenta(): void
     {
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_POST = ['codigo' => '123456'];
         (new AuthController())->verificarCodigoRecuperacion();
         $mensajeCorreoInexistente = $_SESSION['recuperacion_error_codigo'];
@@ -283,6 +395,7 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SESSION['recuperacion_correo'] = 'ana@gmail.com';
+        $_SESSION['recuperacion_solicitud_valida'] = true;
         $_SESSION['recuperacion_intentos'] = 0;
         $_POST = ['codigo' => '123456'];
 

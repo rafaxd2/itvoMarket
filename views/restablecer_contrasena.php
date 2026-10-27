@@ -38,7 +38,7 @@
                     <strong>Correo indicado</strong>
                     <span><?= htmlspecialchars($correo, ENT_QUOTES, 'UTF-8'); ?></span>
                 </div>
-                <p class="recovery-help mb-3">Si está asociado a una cuenta, recibirás un mensaje con un código de recuperación. Ingrésalo aquí para crear una nueva contraseña.</p>
+                <p class="recovery-help mb-3">Enviamos un código de 6 dígitos a este correo. Ingrésalo aquí para crear una nueva contraseña.</p>
 
                 <form method="post" action="index.php?accion=verificar_codigo" id="formulario-codigo" novalidate>
                     <label class="form-label d-block">Código de recuperación</label>
