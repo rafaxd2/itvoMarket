@@ -120,6 +120,37 @@ class AuthController
         include __DIR__ . '/../views/olvide_contrasena.php';
     }
 
+    public function mostrarRestablecer(): void
+    {
+        $token = $_GET['token'] ?? '';
+        $errores = [];
+        $errorValidacion = '';
+
+        if (!is_string($token) || preg_match('/\A[a-f0-9]{64}\z/', $token) !== 1) {
+            include __DIR__ . '/../views/enlace_invalido.php';
+            return;
+        }
+
+        try {
+            $usuario = Usuario::buscarPorToken($token);
+
+            if ($usuario === null) {
+                include __DIR__ . '/../views/enlace_invalido.php';
+                return;
+            }
+
+            include __DIR__ . '/../views/restablecer_contrasena.php';
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al validar enlace: ' . $excepcion->getMessage());
+            $errorValidacion = 'No pudimos validar el enlace. Intenta de nuevo en unos minutos.';
+            include __DIR__ . '/../views/enlace_invalido.php';
+        } catch (Throwable $excepcion) {
+            error_log('Error al validar enlace de recuperación: ' . $excepcion->getMessage());
+            $errorValidacion = 'No pudimos validar el enlace. Intenta de nuevo en unos minutos.';
+            include __DIR__ . '/../views/enlace_invalido.php';
+        }
+    }
+
     // Registra una cuenta nueva, valida corrreo único y cifra la contraseña con password_hash().
     public function registrar(): void
     {
