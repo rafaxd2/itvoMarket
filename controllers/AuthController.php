@@ -69,26 +69,34 @@ class AuthController
         $correoEdicion = is_string($_SESSION['correo_recuperacion_edicion'] ?? null)
             ? $_SESSION['correo_recuperacion_edicion']
             : '';
+        $errorCorreoEdicion = is_string($_SESSION['correo_recuperacion_error_edicion'] ?? null)
+            ? $_SESSION['correo_recuperacion_error_edicion']
+            : '';
         unset($_SESSION['correo_recuperacion_edicion']);
-        $correo = is_string($_POST['correo'] ?? null)
-            ? trim(strtolower($_POST['correo']))
+        unset($_SESSION['correo_recuperacion_error_edicion']);
+        $esSolicitudPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+        $correoOriginal = $esSolicitudPost
+            ? (is_string($_POST['correo'] ?? null) ? $_POST['correo'] : '')
             : $correoEdicion;
+        $correo = normalizarCorreoGmail($correoOriginal) ?? $correoOriginal;
         $errores = [];
 
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        if (!$esSolicitudPost) {
             self::limpiarEstadoRecuperacion();
-            $this->mostrarFormularioRestablecimiento($correo);
+            $this->mostrarFormularioRestablecimiento($correo, $errorCorreoEdicion === ''
+                ? []
+                : ['correo' => $errorCorreoEdicion]);
             return;
         }
 
-        if ($correo === '' || filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
-            $errores['correo'] = $correo === ''
-                ? 'Ingresa tu correo registrado.'
-                : 'Ingresa un correo electrónico válido.';
+        $correoNormalizado = normalizarCorreoGmail($correoOriginal);
+        if ($correoNormalizado === null) {
+            $errores['correo'] = 'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)';
             $this->mostrarFormularioRestablecimiento($correo, $errores);
             return;
         }
 
+        $correo = $correoNormalizado;
         $_SESSION['recuperacion_correo'] = $correo;
         $_SESSION['recuperacion_intentos'] = 0;
         unset(
@@ -209,14 +217,19 @@ class AuthController
     public function reenviarCodigoRecuperacion(): void
     {
         self::iniciarSesion();
-        $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
+        $correoOriginal = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
 
-        if ($correo === '') {
+        $correo = normalizarCorreoGmail($correoOriginal);
+        if ($correo === null) {
+            $_SESSION['correo_recuperacion_edicion'] = $correoOriginal;
+            $_SESSION['correo_recuperacion_error_edicion'] = 'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)';
+            self::limpiarEstadoRecuperacion();
             header('Location: index.php?accion=olvide');
             return;
         }
+        $_SESSION['recuperacion_correo'] = $correo;
 
         $tiempoRestante = 60 - (time() - (int) ($_SESSION['recuperacion_ultimo_envio'] ?? 0));
         if ($tiempoRestante > 0) {
@@ -252,9 +265,16 @@ class AuthController
     public function corregirCorreoRecuperacion(): void
     {
         self::iniciarSesion();
-        $_SESSION['correo_recuperacion_edicion'] = is_string($_SESSION['recuperacion_correo'] ?? null)
+        $correoOriginal = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
+        $correo = normalizarCorreoGmail($correoOriginal);
+        $_SESSION['correo_recuperacion_edicion'] = $correo ?? $correoOriginal;
+        if ($correo === null) {
+            $_SESSION['correo_recuperacion_error_edicion'] = 'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)';
+        } else {
+            unset($_SESSION['correo_recuperacion_error_edicion']);
+        }
         self::limpiarEstadoRecuperacion();
         header('Location: index.php?accion=olvide');
         return;
@@ -411,7 +431,8 @@ class AuthController
     // Registra una cuenta nueva, valida corrreo único y cifra la contraseña con password_hash().
     public function registrar(): void
     {
-        $correo = trim((string) ($_POST['correo'] ?? ''));
+        $correoOriginal = is_string($_POST['correo'] ?? null) ? $_POST['correo'] : '';
+        $correo = normalizarCorreoGmail($correoOriginal) ?? trim($correoOriginal);
         $contrasena = (string) ($_POST['contrasena'] ?? '');
         $rol = trim((string) ($_POST['rol'] ?? ''));
         $errores = [];
@@ -420,7 +441,13 @@ class AuthController
             $errores['general'] = 'Completa todos los campos obligatorios.';
         }
 
-        if ($correo !== '' && Usuario::buscarPorCorreo($correo) !== null) {
+        $correoNormalizado = normalizarCorreoGmail($correoOriginal);
+        if ($correo !== '' && $correoNormalizado === null) {
+            $dominioCorreo = strrchr(strtolower(trim($correoOriginal)), '@');
+            $errores['correo'] = $dominioCorreo !== false && $dominioCorreo !== '@gmail.com'
+                ? 'El correo electrónico debe pertenecer a @gmail.com.'
+                : 'El correo electrónico no es válido.';
+        } elseif ($correoNormalizado !== null && Usuario::buscarPorCorreo($correoNormalizado) !== null) {
             $errores['correo'] = 'Este correo ya está registrado';
         }
 
@@ -438,7 +465,7 @@ class AuthController
         try {
             $idUsuario = Usuario::crear([
                 'nombre' => $nombre,
-                'correo' => strtolower($correo),
+                'correo' => $correoNormalizado,
                 'contrasena' => $contrasenaCifrada,
                 'rol' => strtolower($rol),
             ]);

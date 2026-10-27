@@ -193,10 +193,59 @@ final class RecuperacionContrasenaTest extends ModeloTestCase
         self::assertSame('ana@gmail.com', $_SESSION['correo_recuperacion_edicion']);
     }
 
+    public function testSolicitarRestablecimientoRechazaCorreoInvalidoSinConsultarLaBase(): void
+    {
+        $this->conexion->exec('DROP TABLE usuario');
+        $_POST = ['correo' => 'a@gmail.com.xd'];
+
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)',
+            $html
+        );
+        self::assertStringContainsString('value="a@gmail.com.xd"', $html);
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
+    }
+
+    public function testReenviarCodigoRechazaCorreoDeSesionInvalidoSinConsultarLaBase(): void
+    {
+        $this->conexion->exec('DROP TABLE usuario');
+        $_SESSION['recuperacion_correo'] = 'a@gmail.com.xd';
+
+        (new AuthController())->reenviarCodigoRecuperacion();
+
+        self::assertSame('a@gmail.com.xd', $_SESSION['correo_recuperacion_edicion']);
+        self::assertSame(
+            'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)',
+            $_SESSION['correo_recuperacion_error_edicion']
+        );
+        self::assertArrayNotHasKey('recuperacion_correo', $_SESSION);
+    }
+
+    public function testCorregirCorreoInvalidoMuestraErrorYConservaElValor(): void
+    {
+        $_SESSION['recuperacion_correo'] = 'a@gmail.com.xd';
+
+        (new AuthController())->corregirCorreoRecuperacion();
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        ob_start();
+        (new AuthController())->solicitarRestablecimiento();
+        $html = ob_get_clean();
+
+        self::assertStringContainsString(
+            'Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)',
+            $html
+        );
+        self::assertStringContainsString('value="a@gmail.com.xd"', $html);
+    }
+
     public function testCorreoInexistentePasaALaPantallaDeCodigoConAvisoNeutral(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'POST';
-        $_POST = ['correo' => 'desconocido@gmail.com'];
+        $_POST = ['correo' => 'Desconocido@Gmail.com '];
         (new AuthController())->solicitarRestablecimiento();
 
         ob_start();

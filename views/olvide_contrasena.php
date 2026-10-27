@@ -28,7 +28,7 @@
                 <p class="recovery-subtitle">Solicita un código temporal para recuperar el acceso a tu cuenta.</p>
 
                 <h2 class="recovery-form-title">Recuperación de contraseña</h2>
-                <form method="post" action="index.php?accion=olvide" novalidate>
+                <form method="post" action="index.php?accion=olvide">
                     <div class="mb-3">
                         <label for="correo-recuperacion" class="form-label">Correo registrado</label>
                         <input
@@ -37,8 +37,10 @@
                             type="email"
                             class="form-control clay-input <?= !empty($errores['correo']) ? 'is-invalid' : ''; ?>"
                             value="<?= htmlspecialchars($correo ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                            placeholder="tu.correo@ejemplo.com"
+                            placeholder="nombre@gmail.com"
                             autocomplete="email"
+                            maxlength="254"
+                            pattern="[A-Za-z0-9_%+-]+(\.[A-Za-z0-9_%+-]+)*@[Gg][Mm][Aa][Ii][Ll]\.[Cc][Oo][Mm]"
                             aria-invalid="<?= !empty($errores['correo']) ? 'true' : 'false'; ?>"
                             aria-describedby="ayuda-correo-recuperacion<?= !empty($errores['correo']) ? ' error-correo-recuperacion' : ''; ?>"
                             required>

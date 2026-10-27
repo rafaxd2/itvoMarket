@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/Validaciones.php';
 
 // Clase que encapsula la lógica de acceso y registro de usuarios del sistema.
 class Usuario
@@ -168,22 +169,25 @@ class Usuario
     {
         $datos = self::normalizarDatosUsuario($argumentos);
         $datos['nombre'] = trim($datos['nombre']);
-        $datos['correo'] = strtolower(trim($datos['correo']));
+        $correoOriginal = $datos['correo'];
+        $correoNormalizado = normalizarCorreoGmail($correoOriginal);
+        $datos['correo'] = strtolower(trim($correoOriginal));
         $datos['rol'] = ucfirst(strtolower(trim($datos['rol'])));
 
         if ($datos['nombre'] === '' || $datos['correo'] === '' || $datos['contrasena'] === '' || $datos['rol'] === '') {
             throw new InvalidArgumentException('El nombre, correo, contraseña y rol son obligatorios.');
         }
 
-        if (filter_var($datos['correo'], FILTER_VALIDATE_EMAIL) === false) {
+        if ($correoNormalizado === null) {
+            $dominioCorreo = strrchr($datos['correo'], '@');
+            if ($dominioCorreo !== false && $dominioCorreo !== '@gmail.com') {
+                throw new InvalidArgumentException('El correo electrónico debe pertenecer a @gmail.com.');
+            }
+
             throw new InvalidArgumentException('El correo electrónico no es válido.');
         }
 
-        $posicionArroba = strrpos($datos['correo'], '@');
-        $dominioCorreo = substr($datos['correo'], $posicionArroba + 1);
-        if ($dominioCorreo !== 'gmail.com') {
-            throw new InvalidArgumentException('El correo electrónico debe pertenecer a @gmail.com.');
-        }
+        $datos['correo'] = $correoNormalizado;
 
         if (!in_array($datos['rol'], ['Comprador', 'Vendedor'], true)) {
             throw new InvalidArgumentException('El rol seleccionado no es válido.');

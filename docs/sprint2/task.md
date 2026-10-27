@@ -34,6 +34,7 @@ Reglas: hacer una tarea a la vez, probarla en el navegador y hacer commit antes 
 - [x] 3.9 Crear `public/assets/js/recuperacion-codigo.js`: enfocar la primera casilla, aceptar solo números, avanzar el foco al escribir, regresar con Backspace, repartir pegado de seis dígitos y combinar las casillas en el campo oculto antes de enviar
 - [x] 3.10 Crear la pantalla 2 `views/nueva_contrasena.php`, accesible solo con código verificado en sesión; adaptar `mostrarNuevaContrasena()` y `guardarNuevaContrasena()` para volver a comprobar el hash vigente en base, validar contraseñas, actualizarlas y limpiar tokens y sesión
 - [x] 3.11 Adaptar el controlador y rutas públicas: `accion=verificar_codigo` valida código/expiración y cuenta fallos hasta cinco; `accion=reenviar_codigo` reemplaza código y limita reenvíos a uno cada 60 segundos; `accion=corregir_correo` limpia el estado y precarga el correo previo; `accion=nueva_contrasena` muestra el segundo paso. Incluir todas las rutas de recuperación entre las públicas
+- [x] 3.13 Centralizar la normalización y validación del correo Gmail en `helpers/Validaciones.php`, aplicarla en registro y en todos los flujos de recuperación antes de consultar usuarios o enviar correo, y agregar `type=email`, `required`, `maxlength=254`, `pattern` y pruebas de entradas válidas e inválidas
 - [ ] 3.12 Probar el flujo completo con un correo real: solicitar el código, probar seis casillas, reenvío y corrección de correo, verificar el código y cambiar la contraseña; probar expiración, código incorrecto, quinto intento, código reutilizado y acceso directo a la segunda pantalla
 
 Nota: 3.12 queda pendiente de la prueba manual integral con correo real y sus casos de expiración, intentos y acceso directo.
@@ -42,6 +43,7 @@ Nota: 3.12 queda pendiente de la prueba manual integral con correo real y sus ca
 - [x] 4.1 Pruebas de búsqueda y filtrado: solo texto, solo categoría, ambos a la vez, sin resultados, `%`, `_` y `\` tratados como texto literal, texto vacío con "Todas las categorías" devuelve todo
 - [x] 4.2 Pruebas de recuperación: seis casillas, generación/hash/expiración del código, uso único, código incorrecto/vencido, quinto intento invalida, reenvío espera 60 segundos, corregir correo limpia estado y conserva el valor, pantalla dos exige verificación y revalida el hash vigente, reglas de contraseña, contraseña válida guarda hash y limpia tokens/sesión y mensaje neutro con correo inexistente. Usar datos en memoria; no tocar datos reales.
 - [x] 4.3 Ejecutar todas las pruebas y corregir lo que falle
+- [x] 4.4 Probar la validación del correo en registro, solicitud de recuperación, corrección y reenvío, incluidos el dominio exacto y el límite de 254 caracteres
 
 ## 5. Cierre del sprint
 - [ ] 5.1 Probar manualmente todos los criterios de aceptación de `requirements.md`

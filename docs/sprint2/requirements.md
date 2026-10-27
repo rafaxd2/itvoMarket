@@ -73,7 +73,7 @@ Criterios de aceptación (EARS):
 Cuando el usuario abre "¿Olvidaste tu contraseña?" desde el login, el sistema debe mostrar el formulario "Olvidé mi contraseña" con el campo "Correo registrado".
 
 2. [Event-driven]
-Cuando el correo está vacío o no tiene formato válido, el sistema debe mostrar la ayuda junto al campo, marcarlo en rojo y no enviar la solicitud.
+Cuando el correo está vacío o no tiene formato válido, el sistema debe mostrar la ayuda junto al campo, marcarlo en rojo y no enviar la solicitud. Antes de procesar la solicitud, el servidor debe normalizar el correo con `trim` y minúsculas, y validar que tenga formato de correo válido, dominio exactamente `gmail.com` y máximo 254 caracteres; si no cumple, debe conservar lo escrito y mostrar "Ingresa un correo válido de Gmail (ejemplo: nombre@gmail.com)" sin consultar la base de datos ni enviar correo. La misma validación se aplica al registro, a "Corregir correo" y a "Reenviar código".
 
 3. [Event-driven]
 Cuando el usuario envía un correo con formato válido, el sistema debe guardar el correo en la sesión, mostrar siempre el mismo mensaje y pasar a la pantalla de código: "Si el correo está asociado a una cuenta, recibirás un código para restablecer tu contraseña", exista o no la cuenta y aunque falle el envío (sin revelar qué correos están registrados ni detalles técnicos).
