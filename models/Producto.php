@@ -58,6 +58,57 @@ class Producto
         return $consulta->fetchAll();
     }
 
+    public static function listarCatalogo(?string $texto, ?int $idCategoria): array
+    {
+        $conexion = obtenerConexionBaseDatos();
+        $condiciones = [];
+        $parametros = [];
+
+        if ($texto !== null && $texto !== '') {
+            $textoEscapado = strtr($texto, [
+                '!' => '!!',
+                '%' => '!%',
+                '_' => '!_',
+                '\\' => '!\\',
+            ]);
+            $condiciones[] = '(p.nombre LIKE :texto_nombre ESCAPE \'!\' OR p.descripcion_producto LIKE :texto_descripcion ESCAPE \'!\')';
+            $parametros[':texto_nombre'] = '%' . $textoEscapado . '%';
+            $parametros[':texto_descripcion'] = '%' . $textoEscapado . '%';
+        }
+
+        if ($idCategoria !== null) {
+            $condiciones[] = 'p.id_categoria = :id_categoria';
+            $parametros[':id_categoria'] = $idCategoria;
+        }
+
+        $consultaSql = 'SELECT p.id_producto, p.nombre, p.descripcion_producto, p.precio, p.imagen_producto,
+                c.id_categoria, c.tipo_categoria AS categoria, u.nombre AS nombre_vendedor
+            FROM productos p
+            INNER JOIN categorias c ON c.id_categoria = p.id_categoria
+            INNER JOIN vendedores v ON v.id_vendedor = p.id_vendedor
+            INNER JOIN usuario u ON u.id_usuario = v.id_usuario';
+
+        if ($condiciones !== []) {
+            $consultaSql .= ' WHERE ' . implode(' AND ', $condiciones);
+        }
+
+        $consultaSql .= ' ORDER BY p.id_producto DESC LIMIT 60';
+
+        $consulta = $conexion->prepare($consultaSql);
+        $consulta->execute($parametros);
+
+        return $consulta->fetchAll();
+    }
+
+    public static function hayPublicaciones(): bool
+    {
+        $conexion = obtenerConexionBaseDatos();
+        $consulta = $conexion->prepare('SELECT EXISTS (SELECT 1 FROM productos LIMIT 1)');
+        $consulta->execute();
+
+        return (bool) $consulta->fetchColumn();
+    }
+
     // Comprueba que el nombre del archivo tenga una extensión de imagen permitida.
     public static function validarFormatoImagen(string $nombreArchivo): bool
     {

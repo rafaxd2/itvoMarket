@@ -175,7 +175,7 @@ class AuthController
 
         $destino = strtolower((string) $usuario['rol']) === 'vendedor'
             ? 'panel.php?rol=vendedor'
-            : 'panel.php?rol=comprador';
+            : 'index.php?accion=catalogo';
 
         header('Location: ' . $destino);
         exit;
@@ -241,7 +241,7 @@ class AuthController
 
         $destino = $rolNuevo === 'vendedor'
             ? 'index.php?accion=publicar&rol_cambiado=1'
-            : 'panel.php?rol=comprador&rol_cambiado=1';
+            : 'index.php?accion=catalogo&rol_cambiado=1';
 
         header('Location: ' . $destino);
         exit;

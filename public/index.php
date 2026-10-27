@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/ProductoController.php';
 require_once __DIR__ . '/../controllers/UbicacionController.php';
+require_once __DIR__ . '/../controllers/CatalogoController.php';
 
 $controlador = new AuthController();
 $accion = $_GET['accion'] ?? 'login';
@@ -49,6 +50,10 @@ switch ($accion) {
     case 'mapa':
         header('Location: panel.php?rol=comprador');
         exit;
+        break;
+    case 'catalogo':
+        AuthController::requerirRol('comprador', 'panel.php?rol=vendedor');
+        (new CatalogoController())->mostrar();
         break;
     case 'cambiarRol':
         $controlador->cambiarRol();

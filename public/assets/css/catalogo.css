@@ -1,0 +1,235 @@
+.catalog-page {
+    background: #FDFBF7;
+}
+
+.catalog-container {
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+}
+
+.catalog-heading h1,
+.catalog-count,
+.catalog-empty h2,
+.catalog-product h3 {
+    font-family: 'Baloo 2', Arial, sans-serif;
+}
+
+.catalog-heading h1 {
+    margin-bottom: 0.25rem;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.catalog-heading p {
+    margin-bottom: 1.5rem;
+    color: #6B7A72;
+    font-size: 15px;
+}
+
+.catalog-filters {
+    display: flex;
+    align-items: end;
+    gap: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.catalog-filter-field {
+    min-width: 0;
+}
+
+.catalog-search-field {
+    flex: 1 1 auto;
+}
+
+.catalog-category-field {
+    flex: 0 1 18rem;
+}
+
+.catalog-filter-field label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #1F2A24;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.catalog-filters .form-control,
+.catalog-filters .form-select {
+    min-height: 48px;
+}
+
+.catalog-search-button {
+    flex: 0 0 auto;
+    min-height: 48px;
+    padding-inline: 1.5rem;
+}
+
+.catalog-search-summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.25rem 0 1.25rem;
+    color: #6B7A72;
+    font-size: 12.5px;
+}
+
+.catalog-search-summary p {
+    margin: 0;
+}
+
+.catalog-search-summary a {
+    flex: 0 0 auto;
+    color: #2E7D5B;
+    text-decoration: underline;
+}
+
+.catalog-count {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.catalog-product {
+    overflow: hidden;
+    border: 0;
+    border-radius: 24px;
+    background: #FFFFFF;
+}
+
+.catalog-image {
+    position: relative;
+    display: grid;
+    aspect-ratio: 4 / 3;
+    place-items: center;
+    overflow: hidden;
+    background: #F6F8F7;
+    border-radius: 24px 24px 0 0;
+}
+
+.catalog-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.catalog-image-placeholder {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    color: #9AA6A0;
+    font-size: 2rem;
+}
+
+.catalog-image-placeholder[hidden] {
+    display: none;
+}
+
+.catalog-product-content {
+    padding: 1rem 1.15rem 1.25rem;
+}
+
+.catalog-product h3 {
+    display: -webkit-box;
+    min-height: 3.25rem;
+    margin: 0 0 0.6rem;
+    overflow: hidden;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.catalog-price {
+    display: inline-flex;
+    width: fit-content;
+    margin: 0 0 0.65rem;
+    padding: 0.2rem 0.8rem;
+    border-radius: 999px;
+    background: #F4A259;
+    color: #1F2A24;
+    font-family: 'Baloo 2', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.catalog-product-detail {
+    margin: 0.25rem 0 0;
+    color: #6B7A72;
+    font-size: 12.5px;
+}
+
+.catalog-empty {
+    padding: 2.5rem 1.5rem;
+    background: #F6F8F7;
+    box-shadow: inset 0 2px 5px rgba(31, 42, 36, 0.08);
+    text-align: center;
+}
+
+.catalog-empty-icon {
+    display: grid;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto 0.75rem;
+    place-items: center;
+    border-radius: 50%;
+    background: #F6F8F7;
+    color: #2E7D5B;
+    font-size: 1.5rem;
+}
+
+.catalog-empty h2 {
+    margin-bottom: 0.45rem;
+    font-size: 22px;
+}
+
+.catalog-empty p {
+    max-width: 38rem;
+    margin: 0 auto 1.25rem;
+    color: #6B7A72;
+}
+
+@media (max-width: 991.98px) {
+    .catalog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .catalog-container {
+        padding-top: 1.5rem;
+    }
+
+    .catalog-filters {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .catalog-category-field,
+    .catalog-search-button {
+        flex-basis: auto;
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .catalog-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .catalog-search-summary {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+}

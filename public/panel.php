@@ -13,6 +13,10 @@ if ($rolSolicitado === 'vendedor' && $rolUsuario !== 'vendedor') {
     header('Location: panel.php?rol=comprador');
     exit;
 }
+if ($rolUsuario === 'comprador') {
+    header('Location: index.php?accion=catalogo');
+    exit;
+}
 $mensajeAcceso = ($_GET['mensaje'] ?? '') === 'solo_vendedores'
     ? 'Esta sección es solo para vendedores. Cambia tu rol a Vendedor para acceder.'
     : '';
