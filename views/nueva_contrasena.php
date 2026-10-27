@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="assets/css/clay.css">
     <link rel="stylesheet" href="assets/css/auth-flotantes.css">
     <link rel="stylesheet" href="assets/css/recuperacion-contrasena.css">
+    <link rel="stylesheet" href="assets/css/mostrar-contrasena.css">
 </head>
 <body class="auth-page">
     <div class="auth-floating-decor" aria-hidden="true">
@@ -34,18 +35,21 @@
                 <form method="post" action="index.php?accion=guardar_contrasena" novalidate>
                     <div class="mb-3">
                         <label for="nueva-contrasena" class="form-label">Nueva contraseña</label>
-                        <input
-                            id="nueva-contrasena"
-                            name="contrasena"
-                            type="password"
-                            class="form-control clay-input <?= !empty($errores['contrasena']) ? 'is-invalid' : ''; ?>"
-                            placeholder="Escribe una nueva contraseña"
-                            autocomplete="new-password"
-                            aria-invalid="<?= !empty($errores['contrasena']) ? 'true' : 'false'; ?>"
-                            aria-describedby="<?= !empty($errores['contrasena']) ? 'error-nueva-contrasena' : 'requisitos-contrasena'; ?>"
-                            required>
+                        <div class="campo-contrasena">
+                            <input
+                                id="nueva-contrasena"
+                                name="contrasena"
+                                type="password"
+                                data-mostrar-contrasena
+                                class="form-control clay-input <?= !empty($errores['contrasena']) ? 'is-invalid' : ''; ?>"
+                                placeholder="Escribe una nueva contraseña"
+                                autocomplete="new-password"
+                                aria-invalid="<?= !empty($errores['contrasena']) ? 'true' : 'false'; ?>"
+                                aria-describedby="<?= !empty($errores['contrasena']) ? 'error-nueva-contrasena' : 'requisitos-contrasena'; ?>"
+                                required>
+                        </div>
                         <?php if (!empty($errores['contrasena'])): ?>
-                            <div id="error-nueva-contrasena" class="invalid-feedback"><?= htmlspecialchars($errores['contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div id="error-nueva-contrasena" class="invalid-feedback d-block"><?= htmlspecialchars($errores['contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
                     </div>
                     <div id="requisitos-contrasena" class="recovery-info">
@@ -53,18 +57,21 @@
                     </div>
                     <div class="mb-3">
                         <label for="confirmar-contrasena" class="form-label">Confirmar contraseña</label>
-                        <input
-                            id="confirmar-contrasena"
-                            name="confirmar_contrasena"
-                            type="password"
-                            class="form-control clay-input <?= !empty($errores['confirmar_contrasena']) ? 'is-invalid' : ''; ?>"
-                            placeholder="Repite la nueva contraseña"
-                            autocomplete="new-password"
-                            aria-invalid="<?= !empty($errores['confirmar_contrasena']) ? 'true' : 'false'; ?>"
-                            <?= !empty($errores['confirmar_contrasena']) ? 'aria-describedby="error-confirmar-contrasena"' : ''; ?>
-                            required>
+                        <div class="campo-contrasena">
+                            <input
+                                id="confirmar-contrasena"
+                                name="confirmar_contrasena"
+                                type="password"
+                                data-mostrar-contrasena
+                                class="form-control clay-input <?= !empty($errores['confirmar_contrasena']) ? 'is-invalid' : ''; ?>"
+                                placeholder="Repite la nueva contraseña"
+                                autocomplete="new-password"
+                                aria-invalid="<?= !empty($errores['confirmar_contrasena']) ? 'true' : 'false'; ?>"
+                                <?= !empty($errores['confirmar_contrasena']) ? 'aria-describedby="error-confirmar-contrasena"' : ''; ?>
+                                required>
+                        </div>
                         <?php if (!empty($errores['confirmar_contrasena'])): ?>
-                            <div id="error-confirmar-contrasena" class="invalid-feedback"><?= htmlspecialchars($errores['confirmar_contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div id="error-confirmar-contrasena" class="invalid-feedback d-block"><?= htmlspecialchars($errores['confirmar_contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
                     </div>
                     <button type="submit" class="btn btn-primary clay-button w-100">Guardar nueva contraseña</button>
@@ -85,6 +92,7 @@
     <footer class="site-footer">
         <p class="footer-text">ITVOmarket es informativo: publicaciones y ubicación entre estudiantes. Sin compras ni pagos.</p>
     </footer>
+    <script src="assets/js/mostrar-contrasena.js" defer></script>
     <script src="assets/js/auth-entrada.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,58 @@
+.campo-contrasena {
+    position: relative;
+}
+
+.campo-contrasena input[data-mostrar-contrasena] {
+    padding-right: 3.5rem;
+}
+
+.boton-mostrar-contrasena {
+    position: absolute;
+    top: 50%;
+    right: 0.65rem;
+    display: inline-flex;
+    width: 2.2rem;
+    height: 2.2rem;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: #F6F8F7;
+    box-shadow:
+        0 4px 10px rgba(31, 42, 36, 0.1),
+        inset 0 1px 2px rgba(255, 255, 255, 0.85),
+        inset 0 -2px 3px rgba(31, 42, 36, 0.06);
+    color: #6B7A72;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition:
+        background-color 150ms ease,
+        color 150ms ease,
+        box-shadow 150ms ease,
+        transform 150ms ease;
+}
+
+.boton-mostrar-contrasena:hover,
+.boton-mostrar-contrasena:focus-visible {
+    background: #E7F1EC;
+    color: #2E7D5B;
+}
+
+.boton-mostrar-contrasena:active,
+.boton-mostrar-contrasena[aria-pressed="true"] {
+    background: #E7F1EC;
+    box-shadow:
+        inset 0 2px 4px rgba(31, 42, 36, 0.12),
+        0 1px 3px rgba(31, 42, 36, 0.08);
+    color: #2E7D5B;
+}
+
+.boton-mostrar-contrasena:focus-visible {
+    outline: 3px solid rgba(46, 125, 91, 0.25);
+    outline-offset: 2px;
+}
+
+.boton-mostrar-contrasena i {
+    font-size: 1rem;
+    line-height: 1;
+}

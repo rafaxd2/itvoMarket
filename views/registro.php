@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="assets/css/itvomarket.css">
     <link rel="stylesheet" href="assets/css/clay.css">
     <link rel="stylesheet" href="assets/css/auth-flotantes.css">
+    <link rel="stylesheet" href="assets/css/mostrar-contrasena.css">
 </head>
 <body class="auth-page">
     <div class="auth-floating-decor" aria-hidden="true">
@@ -49,13 +50,16 @@
 
                     <div class="mb-3">
                         <label for="contrasena" class="form-label">Contraseña</label>
-                        <input
-                            id="contrasena"
-                            name="contrasena"
-                            type="password"
-                            class="form-control clay-input <?= !empty($errores['general']) ? 'is-invalid' : '' ?>"
-                            aria-invalid="<?= !empty($errores['general']) ? 'true' : 'false'; ?>"
-                            required>
+                        <div class="campo-contrasena">
+                            <input
+                                id="contrasena"
+                                name="contrasena"
+                                type="password"
+                                data-mostrar-contrasena
+                                class="form-control clay-input <?= !empty($errores['general']) ? 'is-invalid' : '' ?>"
+                                aria-invalid="<?= !empty($errores['general']) ? 'true' : 'false'; ?>"
+                                required>
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -92,6 +96,7 @@
     <footer class="site-footer">
         <p class="footer-text">ITVOmarket es informativo: publicaciones y ubicación entre estudiantes. Sin compras ni pagos.</p>
     </footer>
+    <script src="assets/js/mostrar-contrasena.js" defer></script>
     <script src="assets/js/auth-entrada.js" defer></script>
 </body>
 </html>

@@ -51,6 +51,8 @@ Se accede desde cualquier punto de la tarjeta y usa `index.php?accion=producto&i
 ### Pantallas de recuperación de contraseña (3 pantallas y aviso final)
 Las pantallas de solicitud, código y nueva contraseña comparten el mismo marco que **Login**: logo grande centrado arriba, fondo con los objetos flotantes, tarjeta clay a la izquierda y **panel lateral verde clay "Recupera tu acceso"** a la derecha, con la misma animación de entrada de dos pasos (logo, luego tarjeta y panel). No llevan header de vistas internas. Pie de página fijo como en todas las vistas.
 
+Los campos de contraseña de Login, Registro y "Crea tu nueva contraseña" incluyen un botón claymórfico de ojo para mostrar u ocultar el valor; cada campo cambia de forma independiente, y vuelve a ocultarse al enviar el formulario o regresar a la página.
+
 Texto del panel lateral: se usa el texto de cada wireframe; el párrafo común en las pantallas de recuperación es "Una misma cuenta para consultar como Comprador o publicar como Vendedor."
 
 **1. "Olvidé mi contraseña"** (solicitud de código)
