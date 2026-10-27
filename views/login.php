@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="assets/css/itvomarket.css">
     <link rel="stylesheet" href="assets/css/clay.css">
     <link rel="stylesheet" href="assets/css/auth-flotantes.css">
+    <link rel="stylesheet" href="assets/css/recuperacion-contrasena.css">
 </head>
 <body class="auth-page">
     <div class="auth-floating-decor" aria-hidden="true">
@@ -60,6 +61,9 @@
                     <button type="submit" class="btn btn-primary clay-button w-100">Iniciar sesión</button>
                 </form>
 
+                <div class="login-forgot-link">
+                    <a href="index.php?accion=olvide">¿Olvidaste tu contraseña?</a>
+                </div>
                 <div class="mt-4 text-center">
                     <span>¿Aún no tienes cuenta?</span>
                     <a href="index.php?accion=registro" class="ms-1 text-decoration-none fw-semibold" style="color: var(--itvo-primary);">Crear una cuenta</a>

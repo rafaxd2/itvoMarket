@@ -10,7 +10,16 @@ require_once __DIR__ . '/../controllers/CatalogoController.php';
 $controlador = new AuthController();
 $accion = $_GET['accion'] ?? 'login';
 
-$accionesPublicas = ['login', 'registro', 'procesarLogin', 'procesarRegistro', 'logout'];
+$accionesPublicas = [
+    'login',
+    'registro',
+    'procesarLogin',
+    'procesarRegistro',
+    'logout',
+    'olvide',
+    'restablecer',
+    'guardar_contrasena',
+];
 if (!in_array($accion, $accionesPublicas, true)) {
     AuthController::requerirSesion();
 }
@@ -27,6 +36,15 @@ switch ($accion) {
         break;
     case 'procesarLogin':
         $controlador->login();
+        break;
+    case 'olvide':
+        $controlador->solicitarRestablecimiento();
+        break;
+    case 'restablecer':
+        $controlador->mostrarRestablecer();
+        break;
+    case 'guardar_contrasena':
+        $controlador->guardarNuevaContrasena();
         break;
     case 'logout':
         $controlador->cerrarSesion();

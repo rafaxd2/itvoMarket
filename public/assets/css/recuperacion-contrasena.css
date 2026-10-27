@@ -33,6 +33,23 @@
     text-align: center;
 }
 
+.login-forgot-link {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: 13px;
+}
+
+.login-forgot-link a {
+    color: #2E7D5B;
+    text-decoration: none;
+}
+
+.login-forgot-link a:hover,
+.login-forgot-link a:focus-visible {
+    color: #1F5A40;
+    text-decoration: underline;
+}
+
 .recovery-back-link a {
     color: #2E7D5B;
     font-weight: 600;
