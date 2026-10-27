@@ -2,3 +2,4 @@
 AGENTS.md
 docs/
 tests/.phpunit.cache/
+.env.example
