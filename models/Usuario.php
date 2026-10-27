@@ -64,6 +64,33 @@ class Usuario
         return $usuario !== false ? $usuario : null;
     }
 
+    public static function actualizarContrasena(int $idUsuario, string $contrasena): bool
+    {
+        $contrasenaHash = password_hash($contrasena, PASSWORD_DEFAULT);
+
+        if ($contrasenaHash === false) {
+            throw new RuntimeException('No fue posible cifrar la contraseña.');
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+        $fechaActual = $conexion->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
+            ? "datetime('now')"
+            : 'NOW()';
+        $consulta = $conexion->prepare(
+            'UPDATE usuario
+            SET contrasena = :contrasena, token_reset = NULL, token_expira = NULL
+            WHERE id_usuario = :id_usuario
+            AND token_reset IS NOT NULL
+            AND token_expira > ' . $fechaActual
+        );
+        $consulta->execute([
+            ':contrasena' => $contrasenaHash,
+            ':id_usuario' => $idUsuario,
+        ]);
+
+        return $consulta->rowCount() === 1;
+    }
+
     // Crea un usuario nuevo con nombre, correo, contraseña cifrada y rol válidos.
     public static function crear(...$argumentos): int
     {
