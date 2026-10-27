@@ -5,35 +5,62 @@ Marketplace informativo para vendedores de comida y golosinas universitarios del
 ## Requisitos
 
 - PHP 8+
-- MariaDB/MySQL con la base de datos `itvomarket` ya creada
+- MariaDB/MySQL con la base de datos `marketitvo` ya creada
 - Navegador moderno con acceso a geolocalización
-- Una clave de Google Maps API configurada en `.env`
+- PHPMailer copiado manualmente en `libs/PHPMailer/` (sin Composer)
 
 ## Configuración rápida
 
-1. Copia el archivo `.env.example` o crea un archivo `.env` en la raíz del proyecto con estas variables:
+1. Copia `.env.example` como `.env` en la raíz del proyecto y completa los datos de tu entorno. No subas `.env` a Git:
 
 ```env
 DB_HOST=localhost
-DB_NAME=itvomarket
+DB_PORT=3306
+DB_NAME=marketitvo
 DB_USER=root
 DB_PASS=
-GOOGLE_MAPS_API_KEY=TU_API_KEY_DE_GOOGLE_MAPS
+APP_URL=http://localhost:8000
+MAIL_MODO=log
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_FROM=
+MAIL_FROM_NAME=ITVOmarket
 ```
 
-2. Asegúrate de que la base de datos `itvomarket` tenga las tablas `usuario`, `vendedores`, `productos` y `zona_venta`.
+La base de datos y sus tablas deben existir previamente; la aplicación no las crea ni las modifica.
 
-3. Ejecuta el servidor local desde la raíz del proyecto:
+Para usar Gmail, activa la verificación en dos pasos de la cuenta y genera una **contraseña de aplicación** desde la configuración de seguridad de Google. Usa esa contraseña, no la contraseña habitual de Gmail. Configura `MAIL_USERNAME` con la cuenta autorizada, `MAIL_PASSWORD` con la contraseña de aplicación, `MAIL_MODO=smtp`, `MAIL_HOST=smtp.gmail.com` y `MAIL_PORT=587`. No compartas ni guardes credenciales reales en `.env.example` o en Git.
 
-```bash
-php -S localhost:8000 -t public
+Para desarrollar sin enviar correo ni requerir internet, deja `MAIL_MODO=log`. Los mensajes de recuperación se registran en el log de PHP del servidor local.
+
+PHPMailer debe estar disponible en `libs/PHPMailer/PHPMailer.php`, `libs/PHPMailer/SMTP.php` y `libs/PHPMailer/Exception.php`; se incluye desde esos archivos y no requiere Composer.
+
+2. Inicia el servidor local desde la raíz del proyecto con PHP de XAMPP:
+
+```powershell
+C:\xampp\php\php.exe -S localhost:8000 -t public
 ```
 
-4. Abre en el navegador:
+3. Abre en el navegador:
 
 ```text
 http://localhost:8000/index.php?accion=login
 ```
+
+## Rutas del Sprint 2
+
+Las rutas se sirven mediante `public/index.php`:
+
+- `?accion=catalogo` — catálogo con búsqueda por texto y filtro por categoría (requiere sesión de comprador).
+- `?accion=olvide` — formulario para solicitar recuperación de contraseña.
+- `?accion=restablecer` — pantalla para ingresar el código de seis dígitos.
+- `?accion=verificar_codigo` — valida el código enviado.
+- `?accion=reenviar_codigo` — solicita el reenvío del código, con espera mínima de 60 segundos.
+- `?accion=corregir_correo` — vuelve al formulario para corregir el correo.
+- `?accion=nueva_contrasena` — pantalla protegida para crear la contraseña nueva tras verificar el código.
+- `?accion=guardar_contrasena` — guarda la nueva contraseña y regresa al login.
 
 ## Estructura principal
 
@@ -50,7 +77,7 @@ http://localhost:8000/index.php?accion=login
 PHPUnit se distribuye como archivo PHAR independiente en `tests/phpunit.phar`; no se requiere Composer. Para ejecutar las pruebas de modelos se necesita PHP con la extensión `pdo_sqlite` habilitada:
 
 ```bash
-php tests/phpunit.phar --configuration tests/phpunit.xml
+C:\xampp\php\php.exe tests\phpunit.phar --bootstrap tests\bootstrap.php tests
 ```
 
 La suite usa una base SQLite en memoria, por lo que no modifica la base de datos MariaDB del proyecto.
