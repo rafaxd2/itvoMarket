@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../services/CorreoServicio.php';
 
 // Controlador que centraliza el registro, acceso y cierre de sesión del sistema.
 class AuthController
@@ -56,6 +57,67 @@ class AuthController
         $errores = $contexto['errores'] ?? [];
 
         include __DIR__ . '/../views/registro.php';
+    }
+
+    public function solicitarRestablecimiento(): void
+    {
+        $correo = trim(strtolower((string) ($_POST['correo'] ?? '')));
+        $errores = [];
+        $mensajeEnvio = 'No pudimos enviar el correo. Intenta de nuevo en unos minutos';
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            $this->mostrarFormularioRestablecimiento($correo);
+            return;
+        }
+
+        if ($correo === '' || filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
+            $errores['correo'] = $correo === ''
+                ? 'Ingresa tu correo registrado.'
+                : 'Ingresa un correo electrónico válido.';
+            $this->mostrarFormularioRestablecimiento($correo, $errores);
+            return;
+        }
+
+        try {
+            $token = Usuario::generarTokenRestablecimiento($correo);
+
+            if ($token === null) {
+                $this->mostrarFormularioRestablecimiento($correo, [], true);
+                return;
+            }
+
+            $configuracion = require __DIR__ . '/../config/config.php';
+            $enlace = $configuracion['APP_URL']
+                . '/index.php?accion=restablecer&token='
+                . rawurlencode($token);
+            $usuario = Usuario::buscarPorCorreo($correo);
+
+            if ($usuario === null || !CorreoServicio::enviarRecuperacion(
+                $correo,
+                (string) $usuario['nombre'],
+                $enlace
+            )) {
+                $this->mostrarFormularioRestablecimiento($correo, [], false, $mensajeEnvio);
+                return;
+            }
+
+            $this->mostrarFormularioRestablecimiento($correo, [], true);
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al solicitar recuperación: ' . $excepcion->getMessage());
+            $this->mostrarFormularioRestablecimiento($correo, [], false, $mensajeEnvio);
+        } catch (Throwable $excepcion) {
+            error_log('Error al procesar solicitud de recuperación: ' . $excepcion->getMessage());
+            $this->mostrarFormularioRestablecimiento($correo, [], false, $mensajeEnvio);
+        }
+    }
+
+    private function mostrarFormularioRestablecimiento(
+        string $correo,
+        array $errores = [],
+        bool $enlaceEnviado = false,
+        string $errorEnvio = ''
+    ): void {
+        include __DIR__ . '/../views/olvide_contrasena.php';
     }
 
     // Registra una cuenta nueva, valida corrreo único y cifra la contraseña con password_hash().
