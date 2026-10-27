@@ -47,6 +47,23 @@ class Usuario
         return $token;
     }
 
+    public static function buscarPorToken(string $token): ?array
+    {
+        $conexion = obtenerConexionBaseDatos();
+        $fechaActual = $conexion->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
+            ? "datetime('now')"
+            : 'NOW()';
+        $consulta = $conexion->prepare(
+            'SELECT * FROM usuario
+            WHERE token_reset = :token_reset AND token_expira > ' . $fechaActual . '
+            LIMIT 1'
+        );
+        $consulta->execute([':token_reset' => hash('sha256', $token)]);
+        $usuario = $consulta->fetch();
+
+        return $usuario !== false ? $usuario : null;
+    }
+
     // Crea un usuario nuevo con nombre, correo, contraseña cifrada y rol válidos.
     public static function crear(...$argumentos): int
     {
