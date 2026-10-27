@@ -66,13 +66,17 @@ class AuthController
     public function solicitarRestablecimiento(): void
     {
         self::iniciarSesion();
+        $correoEdicion = is_string($_SESSION['correo_recuperacion_edicion'] ?? null)
+            ? $_SESSION['correo_recuperacion_edicion']
+            : '';
+        unset($_SESSION['correo_recuperacion_edicion']);
         $correo = is_string($_POST['correo'] ?? null)
             ? trim(strtolower($_POST['correo']))
-            : '';
+            : $correoEdicion;
         $errores = [];
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            unset($_SESSION['recuperacion_correo'], $_SESSION['recuperacion_intentos']);
+            self::limpiarEstadoRecuperacion();
             $this->mostrarFormularioRestablecimiento($correo);
             return;
         }
@@ -87,31 +91,23 @@ class AuthController
 
         $_SESSION['recuperacion_correo'] = $correo;
         $_SESSION['recuperacion_intentos'] = 0;
+        unset(
+            $_SESSION['recuperacion_bloqueada'],
+            $_SESSION['recuperacion_codigo_verificado'],
+            $_SESSION['recuperacion_hash_verificado']
+        );
+        $_SESSION['recuperacion_ultimo_envio'] = time();
 
         try {
-            $codigo = Usuario::generarCodigoRestablecimiento($correo);
-
-            if ($codigo !== null) {
-                $usuario = Usuario::buscarPorCorreo($correo);
-                if ($usuario !== null) {
-                    CorreoServicio::enviarRecuperacion(
-                        $correo,
-                        (string) $usuario['nombre'],
-                        $codigo
-                    );
-                }
-            }
+            $this->enviarCodigoRecuperacion($correo);
         } catch (PDOException $excepcion) {
             error_log('Error de base de datos al solicitar recuperación: ' . $excepcion->getMessage());
         } catch (Throwable $excepcion) {
             error_log('Error al procesar solicitud de recuperación: ' . $excepcion->getMessage());
         }
 
-        $codigo = '';
-        $errores = [];
-        $errorValidacion = '';
-        $solicitudRecibida = true;
-        include __DIR__ . '/../views/restablecer_contrasena.php';
+        header('Location: index.php?accion=restablecer');
+        return;
     }
 
     private function mostrarFormularioRestablecimiento(
@@ -127,37 +123,49 @@ class AuthController
         $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
-        $codigo = '';
-        $errores = [];
-        $errorValidacion = '';
-        $solicitudRecibida = false;
 
         if ($correo === '') {
-            include __DIR__ . '/../views/enlace_invalido.php';
+            header('Location: index.php?accion=olvide');
             return;
         }
 
+        if (!empty($_SESSION['recuperacion_codigo_verificado'])) {
+            header('Location: index.php?accion=nueva_contrasena');
+            return;
+        }
+
+        $errorCodigo = is_string($_SESSION['recuperacion_error_codigo'] ?? null)
+            ? $_SESSION['recuperacion_error_codigo']
+            : '';
+        unset($_SESSION['recuperacion_error_codigo']);
+        $mensajeReenvio = is_string($_SESSION['recuperacion_mensaje_reenvio'] ?? null)
+            ? $_SESSION['recuperacion_mensaje_reenvio']
+            : '';
+        unset($_SESSION['recuperacion_mensaje_reenvio']);
         include __DIR__ . '/../views/restablecer_contrasena.php';
     }
 
-    public function guardarNuevaContrasena(): void
+    public function verificarCodigoRecuperacion(): void
     {
         self::iniciarSesion();
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+
         $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
             ? $_SESSION['recuperacion_correo']
             : '';
-        $codigo = is_string($_POST['codigo'] ?? null)
-            ? trim($_POST['codigo'])
-            : '';
-        $contrasena = is_string($_POST['contrasena'] ?? null)
-            ? $_POST['contrasena']
-            : '';
-        $confirmarContrasena = is_string($_POST['confirmar_contrasena'] ?? null)
-            ? $_POST['confirmar_contrasena']
-            : '';
+        $codigo = is_string($_POST['codigo'] ?? null) ? trim($_POST['codigo']) : '';
 
         if ($correo === '') {
-            include __DIR__ . '/../views/enlace_invalido.php';
+            header('Location: index.php?accion=olvide');
+            return;
+        }
+
+        if (!empty($_SESSION['recuperacion_bloqueada'])) {
+            $_SESSION['recuperacion_error_codigo'] = 'Código incorrecto o vencido. Solicita un código nuevo.';
+            header('Location: index.php?accion=restablecer');
             return;
         }
 
@@ -170,20 +178,161 @@ class AuthController
 
                 if ($intentos >= 5) {
                     Usuario::invalidarCodigoRestablecimiento($correo);
-                    unset($_SESSION['recuperacion_correo'], $_SESSION['recuperacion_intentos']);
-                    $errorValidacion = 'Código incorrecto o vencido. Solicita un código nuevo para continuar.';
-                    include __DIR__ . '/../views/enlace_invalido.php';
-                    return;
+                    unset($_SESSION['recuperacion_hash_verificado'], $_SESSION['recuperacion_codigo_verificado']);
+                    $_SESSION['recuperacion_bloqueada'] = true;
                 }
 
-                $errores = ['codigo' => 'Código incorrecto o vencido.'];
-                $solicitudRecibida = false;
-                include __DIR__ . '/../views/restablecer_contrasena.php';
+                $_SESSION['recuperacion_error_codigo'] = 'Código incorrecto o vencido';
+                header('Location: index.php?accion=restablecer');
+                return;
+            }
+
+            $_SESSION['recuperacion_codigo_verificado'] = true;
+            $_SESSION['recuperacion_hash_verificado'] = (string) $usuario['token_reset'];
+            $_SESSION['recuperacion_intentos'] = 0;
+            unset($_SESSION['recuperacion_error_codigo']);
+            header('Location: index.php?accion=nueva_contrasena');
+            return;
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al verificar código: ' . $excepcion->getMessage());
+            $_SESSION['recuperacion_error_codigo'] = 'No pudimos verificar el código. Intenta de nuevo en unos minutos.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        } catch (Throwable $excepcion) {
+            error_log('Error al verificar código: ' . $excepcion->getMessage());
+            $_SESSION['recuperacion_error_codigo'] = 'No pudimos verificar el código. Intenta de nuevo en unos minutos.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+    }
+
+    public function reenviarCodigoRecuperacion(): void
+    {
+        self::iniciarSesion();
+        $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
+            ? $_SESSION['recuperacion_correo']
+            : '';
+
+        if ($correo === '') {
+            header('Location: index.php?accion=olvide');
+            return;
+        }
+
+        $tiempoRestante = 60 - (time() - (int) ($_SESSION['recuperacion_ultimo_envio'] ?? 0));
+        if ($tiempoRestante > 0) {
+            $_SESSION['recuperacion_mensaje_reenvio'] = 'Podrás solicitar otro código en ' . $tiempoRestante . ' segundos.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+
+        try {
+            $envioExitoso = $this->enviarCodigoRecuperacion($correo);
+            $_SESSION['recuperacion_ultimo_envio'] = time();
+            $_SESSION['recuperacion_intentos'] = 0;
+            unset(
+                $_SESSION['recuperacion_bloqueada'],
+                $_SESSION['recuperacion_codigo_verificado'],
+                $_SESSION['recuperacion_hash_verificado']
+            );
+            $_SESSION['recuperacion_mensaje_reenvio'] = $envioExitoso
+                ? 'Te enviamos un código nuevo'
+                : 'No pudimos enviar el código. Intenta de nuevo en unos minutos.';
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al reenviar código: ' . $excepcion->getMessage());
+            $_SESSION['recuperacion_mensaje_reenvio'] = 'No pudimos enviar el código. Intenta de nuevo en unos minutos.';
+        } catch (Throwable $excepcion) {
+            error_log('Error al reenviar código: ' . $excepcion->getMessage());
+            $_SESSION['recuperacion_mensaje_reenvio'] = 'No pudimos enviar el código. Intenta de nuevo en unos minutos.';
+        }
+
+        header('Location: index.php?accion=restablecer');
+        return;
+    }
+
+    public function corregirCorreoRecuperacion(): void
+    {
+        self::iniciarSesion();
+        $_SESSION['correo_recuperacion_edicion'] = is_string($_SESSION['recuperacion_correo'] ?? null)
+            ? $_SESSION['recuperacion_correo']
+            : '';
+        self::limpiarEstadoRecuperacion();
+        header('Location: index.php?accion=olvide');
+        return;
+    }
+
+    public function mostrarNuevaContrasena(): void
+    {
+        self::iniciarSesion();
+        $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
+            ? $_SESSION['recuperacion_correo']
+            : '';
+        $hashCodigo = is_string($_SESSION['recuperacion_hash_verificado'] ?? null)
+            ? $_SESSION['recuperacion_hash_verificado']
+            : '';
+
+        try {
+            if (
+                $correo === ''
+                || empty($_SESSION['recuperacion_codigo_verificado'])
+                || Usuario::buscarPorHashCodigoRestablecimiento($correo, $hashCodigo) === null
+            ) {
+                unset($_SESSION['recuperacion_codigo_verificado'], $_SESSION['recuperacion_hash_verificado']);
+                $_SESSION['recuperacion_error_codigo'] = 'Código incorrecto o vencido';
+                header('Location: index.php?accion=restablecer');
                 return;
             }
 
             $errores = [];
+            include __DIR__ . '/../views/nueva_contrasena.php';
+        } catch (PDOException $excepcion) {
+            error_log('Error de base de datos al validar código verificado: ' . $excepcion->getMessage());
+            unset($_SESSION['recuperacion_codigo_verificado'], $_SESSION['recuperacion_hash_verificado']);
+            $_SESSION['recuperacion_error_codigo'] = 'No pudimos validar el código. Intenta de nuevo en unos minutos.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        } catch (Throwable $excepcion) {
+            error_log('Error al validar código verificado: ' . $excepcion->getMessage());
+            unset($_SESSION['recuperacion_codigo_verificado'], $_SESSION['recuperacion_hash_verificado']);
+            $_SESSION['recuperacion_error_codigo'] = 'No pudimos validar el código. Intenta de nuevo en unos minutos.';
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+    }
 
+    public function guardarNuevaContrasena(): void
+    {
+        self::iniciarSesion();
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            header('Location: index.php?accion=nueva_contrasena');
+            return;
+        }
+
+        $correo = is_string($_SESSION['recuperacion_correo'] ?? null)
+            ? $_SESSION['recuperacion_correo']
+            : '';
+        $hashCodigo = is_string($_SESSION['recuperacion_hash_verificado'] ?? null)
+            ? $_SESSION['recuperacion_hash_verificado']
+            : '';
+        $contrasena = is_string($_POST['contrasena'] ?? null) ? $_POST['contrasena'] : '';
+        $confirmarContrasena = is_string($_POST['confirmar_contrasena'] ?? null)
+            ? $_POST['confirmar_contrasena']
+            : '';
+
+        if ($correo === '' || empty($_SESSION['recuperacion_codigo_verificado'])) {
+            header('Location: index.php?accion=restablecer');
+            return;
+        }
+
+        try {
+            $usuario = Usuario::buscarPorHashCodigoRestablecimiento($correo, $hashCodigo);
+            if ($usuario === null) {
+                unset($_SESSION['recuperacion_codigo_verificado'], $_SESSION['recuperacion_hash_verificado']);
+                $_SESSION['recuperacion_error_codigo'] = 'Código incorrecto o vencido';
+                header('Location: index.php?accion=restablecer');
+                return;
+            }
+
+            $errores = [];
             if ($contrasena === '') {
                 $errores['contrasena'] = 'Ingresa una nueva contraseña.';
             } else {
@@ -200,46 +349,63 @@ class AuthController
             }
 
             if ($errores !== []) {
-                $errorValidacion = '';
-                $solicitudRecibida = false;
-                include __DIR__ . '/../views/restablecer_contrasena.php';
+                include __DIR__ . '/../views/nueva_contrasena.php';
                 return;
             }
 
-            if (!Usuario::actualizarContrasena((int) $usuario['id_usuario'], $codigo, $contrasena)) {
-                $intentos = (int) ($_SESSION['recuperacion_intentos'] ?? 0) + 1;
-                $_SESSION['recuperacion_intentos'] = $intentos;
-
-                if ($intentos >= 5) {
-                    Usuario::invalidarCodigoRestablecimiento($correo);
-                    unset($_SESSION['recuperacion_correo'], $_SESSION['recuperacion_intentos']);
-                    $errorValidacion = 'Código incorrecto o vencido. Solicita un código nuevo para continuar.';
-                    include __DIR__ . '/../views/enlace_invalido.php';
-                    return;
-                }
-
-                $errores = ['codigo' => 'Código incorrecto o vencido.'];
-                $solicitudRecibida = false;
-                include __DIR__ . '/../views/restablecer_contrasena.php';
+            $contrasenaHash = password_hash($contrasena, PASSWORD_DEFAULT);
+            if ($contrasenaHash === false || !Usuario::actualizarContrasenaConHashCodigo(
+                (int) $usuario['id_usuario'],
+                $hashCodigo,
+                $contrasenaHash
+            )) {
+                unset($_SESSION['recuperacion_codigo_verificado'], $_SESSION['recuperacion_hash_verificado']);
+                $_SESSION['recuperacion_error_codigo'] = 'Código incorrecto o vencido';
+                header('Location: index.php?accion=restablecer');
                 return;
             }
 
-            unset($_SESSION['recuperacion_correo'], $_SESSION['recuperacion_intentos']);
+            self::limpiarEstadoRecuperacion();
             header('Location: index.php?accion=login&mensaje=contrasena_actualizada');
-            exit;
+            return;
         } catch (PDOException $excepcion) {
             error_log('Error de base de datos al guardar contraseña: ' . $excepcion->getMessage());
-            $errores = ['general' => 'No pudimos validar el código. Intenta de nuevo en unos minutos.'];
-            $errorValidacion = '';
-            $solicitudRecibida = false;
-            include __DIR__ . '/../views/restablecer_contrasena.php';
+            $errores = ['general' => 'No pudimos actualizar la contraseña. Intenta de nuevo en unos minutos.'];
+            include __DIR__ . '/../views/nueva_contrasena.php';
         } catch (Throwable $excepcion) {
             error_log('Error al guardar contraseña: ' . $excepcion->getMessage());
-            $errores = ['general' => 'No pudimos validar el código. Intenta de nuevo en unos minutos.'];
-            $errorValidacion = '';
-            $solicitudRecibida = false;
-            include __DIR__ . '/../views/restablecer_contrasena.php';
+            $errores = ['general' => 'No pudimos actualizar la contraseña. Intenta de nuevo en unos minutos.'];
+            include __DIR__ . '/../views/nueva_contrasena.php';
         }
+    }
+
+    private function enviarCodigoRecuperacion(string $correo): bool
+    {
+        $codigo = Usuario::generarCodigoRestablecimiento($correo);
+        if ($codigo === null) {
+            return true;
+        }
+
+        $usuario = Usuario::buscarPorCorreo($correo);
+        if ($usuario !== null) {
+            return CorreoServicio::enviarRecuperacion($correo, (string) $usuario['nombre'], $codigo);
+        }
+
+        return true;
+    }
+
+    private static function limpiarEstadoRecuperacion(): void
+    {
+        unset(
+            $_SESSION['recuperacion_correo'],
+            $_SESSION['recuperacion_intentos'],
+            $_SESSION['recuperacion_ultimo_envio'],
+            $_SESSION['recuperacion_bloqueada'],
+            $_SESSION['recuperacion_codigo_verificado'],
+            $_SESSION['recuperacion_hash_verificado'],
+            $_SESSION['recuperacion_error_codigo'],
+            $_SESSION['recuperacion_mensaje_reenvio']
+        );
     }
 
     // Registra una cuenta nueva, valida corrreo único y cifra la contraseña con password_hash().

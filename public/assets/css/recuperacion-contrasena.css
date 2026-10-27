@@ -28,6 +28,62 @@
     margin: 0.4rem 0 0;
 }
 
+.recovery-email-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: 18px;
+    background: #F6F8F7;
+    box-shadow: inset 0 2px 5px rgba(31, 42, 36, 0.08);
+    overflow-wrap: anywhere;
+}
+
+.recovery-email-card strong {
+    color: #6B7A72;
+    font-size: 0.82rem;
+}
+
+.recovery-code-inputs {
+    display: none;
+    justify-content: center;
+    gap: 0.65rem;
+}
+
+.has-code-inputs .recovery-code-inputs {
+    display: flex;
+}
+
+.recovery-code-digit {
+    width: 3.25rem;
+    height: 3.5rem;
+    padding: 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.recovery-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1.35rem;
+}
+
+.recovery-actions a {
+    color: #2E7D5B;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.recovery-actions a:hover,
+.recovery-actions a:focus-visible {
+    color: #1F5A40;
+    text-decoration: underline;
+}
+
 .recovery-back-link {
     margin-top: 1.5rem;
     text-align: center;
@@ -85,5 +141,14 @@
 
     .auth-panel .auth-side.clay-panel-color {
         padding: 2rem 1.5rem;
+    }
+
+    .recovery-code-inputs {
+        gap: 0.4rem;
+    }
+
+    .recovery-code-digit {
+        width: min(3rem, 14vw);
+        height: 3.2rem;
     }
 }

@@ -65,6 +65,26 @@ class Usuario
         }
 
         $hashCodigo = hash('sha256', (int) $usuario['id_usuario'] . ':' . $codigo);
+        return self::buscarPorHashCodigoRestablecimiento($correo, $hashCodigo);
+    }
+
+    public static function buscarPorHashCodigoRestablecimiento(string $correo, string $hashCodigo): ?array
+    {
+        if (preg_match('/\A[a-f0-9]{64}\z/', $hashCodigo) !== 1) {
+            return null;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+        $consultaUsuario = $conexion->prepare(
+            'SELECT id_usuario FROM usuario WHERE correo = :correo LIMIT 1'
+        );
+        $consultaUsuario->execute([':correo' => trim(strtolower($correo))]);
+        $usuario = $consultaUsuario->fetch();
+
+        if ($usuario === false) {
+            return null;
+        }
+
         $fechaActual = $conexion->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
             ? "datetime('now')"
             : 'NOW()';
@@ -96,8 +116,23 @@ class Usuario
             throw new RuntimeException('No fue posible cifrar la contraseña.');
         }
 
-        $conexion = obtenerConexionBaseDatos();
         $hashCodigo = hash('sha256', $idUsuario . ':' . $codigo);
+        return self::actualizarContrasenaConHashCodigo($idUsuario, $hashCodigo, $contrasenaHash);
+    }
+
+    public static function actualizarContrasenaConHashCodigo(
+        int $idUsuario,
+        string $hashCodigo,
+        string $contrasenaHash
+    ): bool {
+        if (
+            preg_match('/\A[a-f0-9]{64}\z/', $hashCodigo) !== 1
+            || password_get_info($contrasenaHash)['algo'] === null
+        ) {
+            return false;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
         $fechaActual = $conexion->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite'
             ? "datetime('now')"
             : 'NOW()';

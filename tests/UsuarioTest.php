@@ -61,6 +61,23 @@ final class UsuarioTest extends ModeloTestCase
         self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigo));
     }
 
+    public function testCodigoNuevoReemplazaAlAnterior(): void
+    {
+        Usuario::crear([
+            'nombre' => 'Ana',
+            'correo' => 'ana@gmail.com',
+            'contrasena' => password_hash('Secreto123', PASSWORD_DEFAULT),
+            'rol' => 'comprador',
+        ]);
+        $codigoAnterior = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+        $codigoNuevo = Usuario::generarCodigoRestablecimiento('ana@gmail.com');
+
+        if ($codigoAnterior !== $codigoNuevo) {
+            self::assertNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigoAnterior));
+        }
+        self::assertNotNull(Usuario::buscarPorCodigoRestablecimiento('ana@gmail.com', $codigoNuevo));
+    }
+
     public function testActualizarContrasenaConsumeCodigoYGuardaHash(): void
     {
         $idUsuario = Usuario::crear([

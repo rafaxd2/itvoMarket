@@ -18,6 +18,10 @@ $accionesPublicas = [
     'logout',
     'olvide',
     'restablecer',
+    'verificar_codigo',
+    'reenviar_codigo',
+    'corregir_correo',
+    'nueva_contrasena',
     'guardar_contrasena',
 ];
 if (!in_array($accion, $accionesPublicas, true)) {
@@ -42,6 +46,18 @@ switch ($accion) {
         break;
     case 'restablecer':
         $controlador->mostrarRestablecer();
+        break;
+    case 'verificar_codigo':
+        $controlador->verificarCodigoRecuperacion();
+        break;
+    case 'reenviar_codigo':
+        $controlador->reenviarCodigoRecuperacion();
+        break;
+    case 'corregir_correo':
+        $controlador->corregirCorreoRecuperacion();
+        break;
+    case 'nueva_contrasena':
+        $controlador->mostrarNuevaContrasena();
         break;
     case 'guardar_contrasena':
         $controlador->guardarNuevaContrasena();
