@@ -46,6 +46,18 @@ El sistema debe tratar el texto de búsqueda como texto literal: los caracteres 
 10. [State-driven]
 Mientras el rol actual sea Comprador, el sistema debe mostrar "Catálogo" como pantalla principal (reemplaza la pantalla de bienvenida del Sprint 1) y no debe mostrar la opción de mapa ni "Publicar producto" ni "Mi ubicación".
 
+11. [Event-driven]
+Cuando el comprador selecciona cualquier parte de una tarjeta de producto (incluidas la imagen y el nombre), el sistema debe abrir `index.php?accion=producto&id=N` con el detalle de esa publicación.
+
+12. [Event-driven]
+Cuando se muestra el detalle de una publicación existente, el sistema debe mostrar su imagen grande o el placeholder del catálogo, nombre, precio, categoría, descripción completa y nombre del vendedor. Debe mostrar estado y condición solo cuando estén registrados. Esta pantalla es de solo lectura y no incluye reseñas, mapa ni ubicación.
+
+13. [Event-driven]
+Cuando el identificador de producto no es numérico o no corresponde a una publicación, el sistema debe mostrar "Esta publicación no está disponible" y un botón para volver al catálogo, sin mostrar errores fatales.
+
+14. [Event-driven]
+Cuando el comprador regresa desde el detalle al catálogo, el sistema debe conservar los parámetros de búsqueda `q` y `categoria` que tenía al abrir la publicación.
+
 ## Requisito 8: Recuperación de contraseña (HU-10)
 **Historia:** Como usuario, quiero recuperar mi contraseña mediante mi correo electrónico para poder volver a acceder a mi cuenta si la olvido.
 

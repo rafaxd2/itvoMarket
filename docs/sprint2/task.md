@@ -20,6 +20,7 @@ Reglas: hacer una tarea a la vez, probarla en el navegador y hacer commit antes 
 - [x] 2.9 Crear `public/assets/css/catalogo.css` con los estilos de la barra de filtros, la tarjeta de publicación y los estados vacíos, usando las clases de `clay.css`
 - [x] 2.10 Agregar la ruta `accion=catalogo` en `public/index.php`; exigir sesión iniciada (sin sesión, al login)
 - [x] 2.11 Hacer que el login y "Cambiar de rol" lleven al Comprador al catálogo (reemplaza la pantalla de bienvenida del Sprint 1) y que su menú muestre solo "Catálogo", sin "Mapa", "Publicar producto" ni "Mi ubicación" (Requisito 7, criterio 10)
+- [x] 2.12 Agregar el detalle de producto de solo lectura: ruta protegida `accion=producto&id=N`, tarjetas enlazadas conservando filtros, consulta preparada con vendedor/estado/condición opcionales, vista clay con placeholder y manejo amable de ID inválido o inexistente, y pruebas unitarias de ID válido/inexistente/no numérico. No agregar reseñas, mapa ni ubicación ni modificar el esquema.
 
 ## 3. Recuperación de contraseña (HU-10, Requisito 8)
 - [x] 3.1 Agregar `generarCodigoRestablecimiento($correo)`: generar el código con `str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT)`, guardar en `token_reset` solo `hash('sha256', id_usuario . ':' . codigo)` y calcular `token_expira` con `DATE_ADD(NOW(), INTERVAL 15 MINUTE)` en SQL; reemplazar el código anterior y devolver el código o `null` si no existe el correo

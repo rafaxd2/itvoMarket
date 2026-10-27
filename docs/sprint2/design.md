@@ -27,7 +27,7 @@ Estructura de arriba hacia abajo:
 - Precio como insignia en píldora: fondo `#F4A259`, texto `#1F2A24`, Baloo 2 20px 700, formato `$350.00 MXN` (el naranja solo como fondo, no como color de texto, por contraste).
 - Categoría (Arial 12.5px, `#6B7A72`).
 - "Vendedor: nombre" (Arial 12.5px, `#6B7A72`).
-- Sin hover con elevación (regla de Sprint 1); la tarjeta no es un enlace en este sprint.
+- Toda la tarjeta, incluida imagen y nombre, es un enlace al detalle de la publicación. El cursor es pointer y al hover/foco la tarjeta recibe una elevación clay sutil; el enlace tiene indicador de foco visible para teclado.
 
 **Estado sin resultados:** en lugar de la cuadrícula, una tarjeta clay hundida (fondo `#F6F8F7`) con el título "No encontramos publicaciones" (Baloo 2, 22px), el texto "No hay coincidencias para “texto” en Categoría. Prueba con otra palabra o elimina los filtros." (si solo hay categoría: "No hay publicaciones en Categoría. Prueba con otra categoría o elimina los filtros.") y el botón "Limpiar filtros".
 
@@ -36,6 +36,17 @@ Estructura de arriba hacia abajo:
 **Comportamiento:** el formulario envía por GET (`index.php?accion=catalogo&q=texto&categoria=3`), así que el texto y la categoría se conservan en los campos después de buscar y el resultado se puede recargar o compartir. Sin paginación en este sprint: máximo 60 publicaciones por consulta, ordenadas de la más reciente a la más antigua.
 
 **Animaciones:** ninguna de entrada para las tarjetas (regla de Sprint 1). Solo las microinteracciones ya definidas: botón "Buscar" que se hunde al presionar y anillo verde de enfoque en el campo y la lista.
+
+### Detalle de publicación (solo Comprador, solo lectura)
+Se accede desde cualquier punto de la tarjeta y usa `index.php?accion=producto&id=N`. Mantiene el header de vistas internas y el estilo clay del catálogo.
+
+- En escritorio, presentar una tarjeta clay amplia con imagen grande a la izquierda y la información a la derecha; en móvil, apilar la imagen arriba del contenido.
+- La imagen usa `object-fit: cover`; si no existe o no carga, muestra el mismo placeholder `bi-image` del catálogo.
+- Mostrar el nombre del producto como título Baloo 2, el precio en la insignia naranja del catálogo, la categoría, la descripción completa y el nombre del vendedor.
+- Mostrar estado y condición en un apartado secundario solo si existen sus datos relacionados.
+- Incluir arriba el botón "← Volver al catálogo". Conservar en el enlace los parámetros `q` y `categoria` presentes al entrar al detalle.
+- Ante un identificador inválido o sin producto, mostrar una tarjeta clay amable con "Esta publicación no está disponible" y el botón "Volver al catálogo".
+- No incluir acciones de compra/edición, reseñas, mapa ni ubicación: corresponden a sprints posteriores.
 
 ### Pantallas de recuperación de contraseña (3 pantallas y aviso final)
 Las pantallas de solicitud, código y nueva contraseña comparten el mismo marco que **Login**: logo grande centrado arriba, fondo con los objetos flotantes, tarjeta clay a la izquierda y **panel lateral verde clay "Recupera tu acceso"** a la derecha, con la misma animación de entrada de dos pasos (logo, luego tarjeta y panel). No llevan header de vistas internas. Pie de página fijo como en todas las vistas.
