@@ -3,3 +3,4 @@ AGENTS.md
 docs/
 tests/.phpunit.cache/
 .env.example
+node_modules/
