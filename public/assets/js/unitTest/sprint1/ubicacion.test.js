@@ -147,7 +147,11 @@ describe("ubicacion.js (HU-03)", () => {
 
   test("guardarUbicacion reemplaza el contenido con el HTML de una respuesta exitosa", async () => {
     // Arrange (preparación)
-    fetch.mockResolvedValue({ text: () => Promise.resolve("<main>Ubicación guardada</main>") });
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve("<main>Ubicación guardada</main>"),
+    });
     document.getElementById("latitud").value = "17.068500";
     document.getElementById("longitud").value = "-96.725700";
 

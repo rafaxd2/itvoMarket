@@ -143,7 +143,13 @@ function guardarUbicacion() {
         method: 'POST',
         body: formData,
     })
-        .then((respuesta) => respuesta.text())
+        .then((respuesta) => {
+            if (!respuesta.ok) {
+                throw new Error('No fue posible guardar la ubicación.');
+            }
+
+            return respuesta.text();
+        })
         .then((html) => {
             mapa?.remove();
             document.body.innerHTML = html;
