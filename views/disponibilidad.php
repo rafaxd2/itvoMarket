@@ -96,5 +96,6 @@
     <footer class="site-footer">
         <p class="footer-text">ITVOmarket es informativo: publicaciones y ubicación entre estudiantes. Sin compras ni pagos.</p>
     </footer>
+    <script src="assets/js/estado-disponibilidad.js" defer></script>
 </body>
 </html>
