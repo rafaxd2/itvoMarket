@@ -32,71 +32,73 @@
             </div>
         <?php endif; ?>
 
-        <div class="seller-products-toolbar">
-            <h2 class="catalog-count">
-                <?= count($productos); ?>
-                <?= count($productos) === 1 ? 'producto' : 'productos'; ?>
-                en tu catálogo
-            </h2>
-            <a class="btn btn-primary clay-button" href="index.php?accion=publicar">Publicar producto</a>
-        </div>
-
-        <?php if ($productos === []): ?>
-            <section class="catalog-empty clay-card clay-empty" aria-live="polite">
-                <div class="catalog-empty-icon" aria-hidden="true"><i class="bi bi-basket2"></i></div>
-                <h2>Aún no tienes productos publicados</h2>
-                <p>Publica un producto para que otros estudiantes puedan conocerlo.</p>
+        <?php if (!$errorCarga): ?>
+            <div class="seller-products-toolbar">
+                <h2 class="catalog-count">
+                    <?= count($productos); ?>
+                    <?= count($productos) === 1 ? 'producto' : 'productos'; ?>
+                    en tu catálogo
+                </h2>
                 <a class="btn btn-primary clay-button" href="index.php?accion=publicar">Publicar producto</a>
-            </section>
-        <?php else: ?>
-            <section class="catalog-grid seller-products-grid" aria-label="Mis productos publicados">
-                <?php foreach ($productos as $producto): ?>
-                    <?php $urlImagen = CatalogoController::obtenerUrlImagenProducto($producto['imagen_producto'] ?? null); ?>
-                    <?php $idProducto = (int) $producto['id_producto']; ?>
-                    <article class="catalog-product clay-card seller-product-card">
-                        <div class="catalog-image">
-                            <?php if ($urlImagen !== null): ?>
-                                <img
-                                    src="<?= htmlspecialchars($urlImagen, ENT_QUOTES, 'UTF-8'); ?>"
-                                    alt="<?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    loading="lazy"
-                                    data-product-image>
-                                <span class="catalog-image-placeholder" aria-hidden="true" hidden><i class="bi bi-image"></i></span>
-                            <?php else: ?>
-                                <span class="catalog-image-placeholder" aria-hidden="true"><i class="bi bi-image"></i></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="catalog-product-content">
-                            <h3 title="<?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
-                                <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>
-                            </h3>
-                            <p class="catalog-price">
-                                $<?= number_format((float) $producto['precio'], 2, '.', ','); ?> MXN
-                            </p>
-                            <p class="catalog-product-detail">
-                                <?= htmlspecialchars((string) ($producto['categoria'] ?? 'Sin categoría'), ENT_QUOTES, 'UTF-8'); ?>
-                            </p>
-                            <p class="catalog-product-detail seller-product-description">
-                                <?= htmlspecialchars((string) ($producto['descripcion_producto'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
-                            </p>
-                            <div class="seller-product-actions">
-                                <a
-                                    class="btn btn-outline-primary clay-button"
-                                    href="index.php?accion=editar_producto&amp;id=<?= $idProducto; ?>"
-                                    aria-label="Editar <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
-                                    Editar
-                                </a>
-                                <a
-                                    class="btn btn-outline-secondary clay-button seller-product-delete"
-                                    href="index.php?accion=confirmar_eliminar&amp;id=<?= $idProducto; ?>"
-                                    aria-label="Eliminar <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
-                                    Eliminar
-                                </a>
+            </div>
+
+            <?php if ($productos === []): ?>
+                <section class="catalog-empty clay-card clay-empty" aria-live="polite">
+                    <div class="catalog-empty-icon" aria-hidden="true"><i class="bi bi-basket2"></i></div>
+                    <h2>Aún no tienes productos publicados</h2>
+                    <p>Publica un producto para que otros estudiantes puedan conocerlo.</p>
+                    <a class="btn btn-primary clay-button" href="index.php?accion=publicar">Publicar producto</a>
+                </section>
+            <?php else: ?>
+                <section class="catalog-grid seller-products-grid" aria-label="Mis productos publicados">
+                    <?php foreach ($productos as $producto): ?>
+                        <?php $urlImagen = CatalogoController::obtenerUrlImagenProducto($producto['imagen_producto'] ?? null); ?>
+                        <?php $idProducto = (int) $producto['id_producto']; ?>
+                        <article class="catalog-product clay-card seller-product-card">
+                            <div class="catalog-image">
+                                <?php if ($urlImagen !== null): ?>
+                                    <img
+                                        src="<?= htmlspecialchars($urlImagen, ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt="<?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        loading="lazy"
+                                        data-product-image>
+                                    <span class="catalog-image-placeholder" aria-hidden="true" hidden><i class="bi bi-image"></i></span>
+                                <?php else: ?>
+                                    <span class="catalog-image-placeholder" aria-hidden="true"><i class="bi bi-image"></i></span>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </section>
+                            <div class="catalog-product-content">
+                                <h3 title="<?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                                </h3>
+                                <p class="catalog-price">
+                                    $<?= number_format((float) $producto['precio'], 2, '.', ','); ?> MXN
+                                </p>
+                                <p class="catalog-product-detail">
+                                    <?= htmlspecialchars((string) ($producto['categoria'] ?? 'Sin categoría'), ENT_QUOTES, 'UTF-8'); ?>
+                                </p>
+                                <p class="catalog-product-detail seller-product-description">
+                                    <?= htmlspecialchars((string) ($producto['descripcion_producto'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                                </p>
+                                <div class="seller-product-actions">
+                                    <a
+                                        class="btn btn-outline-primary clay-button"
+                                        href="index.php?accion=editar_producto&amp;id=<?= $idProducto; ?>"
+                                        aria-label="Editar <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
+                                        Editar
+                                    </a>
+                                    <a
+                                        class="btn btn-outline-secondary clay-button seller-product-delete"
+                                        href="index.php?accion=confirmar_eliminar&amp;id=<?= $idProducto; ?>"
+                                        aria-label="Eliminar <?= htmlspecialchars((string) $producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
+                                        Eliminar
+                                    </a>
+                                </div>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </section>
+            <?php endif; ?>
         <?php endif; ?>
     </main>
 

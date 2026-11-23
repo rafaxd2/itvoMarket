@@ -439,6 +439,19 @@ final class CatalogoVendedorControllerTest extends ModeloTestCase
         self::assertSame('Producto eliminado correctamente.', $_SESSION['mensaje_catalogo_vendedor']);
     }
 
+    public function testErrorAlListarNoSePresentaComoCatalogoVacio(): void
+    {
+        $this->conexion->exec('DROP TABLE productos');
+
+        $html = $this->capturarVista(static function (): void {
+            (new CatalogoVendedorController())->misProductos();
+        });
+
+        self::assertStringContainsString('No fue posible cargar tus productos. Inténtalo nuevamente.', $html);
+        self::assertStringNotContainsString('Aún no tienes productos publicados', $html);
+        self::assertStringNotContainsString('0 productos en tu catálogo', $html);
+    }
+
     private function insertarProducto(
         int $idProducto,
         int $idVendedor,

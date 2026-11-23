@@ -18,6 +18,7 @@ class CatalogoVendedorController
         $productos = [];
         $mensajeExito = (string) ($_SESSION['mensaje_catalogo_vendedor'] ?? '');
         $error = (string) ($_SESSION['error_catalogo_vendedor'] ?? '');
+        $errorCarga = false;
         unset($_SESSION['mensaje_catalogo_vendedor'], $_SESSION['error_catalogo_vendedor']);
 
         try {
@@ -28,6 +29,7 @@ class CatalogoVendedorController
         } catch (PDOException $excepcion) {
             error_log('No fue posible cargar los productos del vendedor.');
             $error = 'No fue posible cargar tus productos. Inténtalo nuevamente.';
+            $errorCarga = true;
         }
 
         include __DIR__ . '/../views/mis_productos.php';
