@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="assets/css/itvomarket.css">
     <link rel="stylesheet" href="assets/css/clay.css">
     <link rel="stylesheet" href="assets/css/catalogo.css">
+    <link rel="stylesheet" href="assets/css/mis-productos.css">
 </head>
 <body class="catalog-page">
     <?php include __DIR__ . '/header.php'; ?>
