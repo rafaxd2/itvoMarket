@@ -85,4 +85,62 @@ final class ZonaVentaTest extends ModeloTestCase
     {
         self::assertNull(ZonaVenta::obtenerPorVendedor(1));
     }
+
+    public function testObtenerEstadoPorVendedorDevuelveEstadoGuardado(): void
+    {
+        $this->conexion->exec(
+            "INSERT INTO zona_venta (id_vendedor, latitud, longitud, punto_referencia, estado_zona, fecha_hora)
+             VALUES (1, 17.0, -96.0, 'Puesto', 'Activo', '2026-10-12 10:00:00')"
+        );
+
+        self::assertSame('Activo', ZonaVenta::obtenerEstadoPorVendedor(1));
+        self::assertNull(ZonaVenta::obtenerEstadoPorVendedor(2));
+    }
+
+    public function testActualizarEstadoZonaNormalizaInactivoYActualizaSoloAlVendedorSolicitado(): void
+    {
+        $this->conexion->exec(
+            "INSERT INTO zona_venta (id_vendedor, latitud, longitud, punto_referencia, estado_zona, fecha_hora)
+             VALUES (1, 17.0, -96.0, 'Uno', 'Activo', '2026-10-12 10:00:00'),
+                    (2, 18.0, -97.0, 'Dos', 'Activo', '2026-10-12 11:00:00')"
+        );
+
+        self::assertTrue(ZonaVenta::actualizarEstadoZona(1, 'Inactivo'));
+
+        $estados = $this->conexion->query(
+            'SELECT id_vendedor, estado_zona FROM zona_venta ORDER BY id_vendedor'
+        )->fetchAll(PDO::FETCH_KEY_PAIR);
+        self::assertSame('Desactivo', $estados[1]);
+        self::assertSame('Activo', $estados[2]);
+    }
+
+    public function testActualizarEstadoZonaAceptaActivoYUnEstadoYaGuardado(): void
+    {
+        $this->conexion->exec(
+            "INSERT INTO zona_venta (id_vendedor, latitud, longitud, punto_referencia, estado_zona, fecha_hora)
+             VALUES (1, 17.0, -96.0, 'Puesto', 'Activo', '2026-10-12 10:00:00')"
+        );
+
+        self::assertTrue(ZonaVenta::actualizarEstadoZona(1, 'Activo'));
+        self::assertSame('Activo', ZonaVenta::obtenerEstadoPorVendedor(1));
+    }
+
+    public function testActualizarEstadoZonaRechazaEstadoInvalidoOVendedorSinZona(): void
+    {
+        $this->conexion->exec(
+            "INSERT INTO zona_venta (id_vendedor, latitud, longitud, punto_referencia, estado_zona, fecha_hora)
+             VALUES (1, 17.0, -96.0, 'Puesto', 'Activo', '2026-10-12 10:00:00')"
+        );
+
+        self::assertFalse(ZonaVenta::actualizarEstadoZona(1, 'Disponible'));
+        self::assertFalse(ZonaVenta::actualizarEstadoZona(2, 'Inactivo'));
+        self::assertSame('Activo', ZonaVenta::obtenerEstadoPorVendedor(1));
+    }
+
+    public function testActualizarEstadoZonaDevuelveFalsoAnteErrorDeBaseDeDatos(): void
+    {
+        $this->conexion->exec('DROP TABLE zona_venta');
+
+        self::assertFalse(ZonaVenta::actualizarEstadoZona(1, 'Inactivo'));
+    }
 }

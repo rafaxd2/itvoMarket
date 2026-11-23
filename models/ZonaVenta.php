@@ -12,7 +12,7 @@ class ZonaVenta
     {
         $datos = self::normalizarDatosZona($argumentos);
         self::validarDatosUbicacion($datos);
-        $datos['estado_zona'] = str_replace('Inactivo', 'Desactivo', (string) $datos['estado_zona']);
+        $datos['estado_zona'] = self::normalizarEstadoZona((string) $datos['estado_zona']);
         $conexion = obtenerConexionBaseDatos();
         $consultaExistencia = $conexion->prepare('SELECT id_zona_venta FROM zona_venta WHERE id_vendedor = :id_vendedor LIMIT 1');
         $consultaExistencia->execute([':id_vendedor' => (int) $datos['id_vendedor']]);
@@ -72,6 +72,58 @@ class ZonaVenta
         return $zona !== false ? $zona : null;
     }
 
+    public static function obtenerEstadoPorVendedor(int $idVendedor): ?string
+    {
+        if ($idVendedor <= 0) {
+            return null;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+        $consulta = $conexion->prepare(
+            'SELECT estado_zona FROM zona_venta WHERE id_vendedor = :id_vendedor LIMIT 1'
+        );
+        $consulta->execute([':id_vendedor' => $idVendedor]);
+        $estado = $consulta->fetchColumn();
+
+        return $estado !== false ? (string) $estado : null;
+    }
+
+    public static function actualizarEstadoZona(int $idVendedor, string $estado): bool
+    {
+        if ($idVendedor <= 0) {
+            return false;
+        }
+
+        $estadoNormalizado = self::normalizarEstadoZona($estado);
+        if (!in_array($estadoNormalizado, ['Activo', 'Desactivo'], true)) {
+            return false;
+        }
+
+        try {
+            $conexion = obtenerConexionBaseDatos();
+            $consultaExistencia = $conexion->prepare(
+                'SELECT id_zona_venta FROM zona_venta WHERE id_vendedor = :id_vendedor LIMIT 1'
+            );
+            $consultaExistencia->execute([':id_vendedor' => $idVendedor]);
+            if ($consultaExistencia->fetchColumn() === false) {
+                return false;
+            }
+
+            $consulta = $conexion->prepare(
+                'UPDATE zona_venta SET estado_zona = :estado_zona WHERE id_vendedor = :id_vendedor'
+            );
+            $consulta->execute([
+                ':estado_zona' => $estadoNormalizado,
+                ':id_vendedor' => $idVendedor,
+            ]);
+
+            return true;
+        } catch (PDOException $excepcion) {
+            error_log('No fue posible actualizar el estado de la zona de venta.');
+            return false;
+        }
+    }
+
     // Normaliza los datos de ubicación para aceptar arreglo o argumentos separados.
     private static function normalizarDatosZona(array $argumentos): array
     {
@@ -83,7 +135,7 @@ class ZonaVenta
                 'latitud' => $datos['latitud'] ?? null,
                 'longitud' => $datos['longitud'] ?? null,
                 'punto_referencia' => (string) ($datos['punto_referencia'] ?? ''),
-                'estado_zona' => str_replace('Inactivo', 'Desactivo', (string) ($datos['estado_zona'] ?? 'Activo')),
+                'estado_zona' => self::normalizarEstadoZona((string) ($datos['estado_zona'] ?? 'Activo')),
             ];
         }
 
@@ -93,11 +145,16 @@ class ZonaVenta
                 'latitud' => $argumentos[1],
                 'longitud' => $argumentos[2],
                 'punto_referencia' => (string) $argumentos[3],
-                'estado_zona' => str_replace('Inactivo', 'Desactivo', (string) $argumentos[4]),
+                'estado_zona' => self::normalizarEstadoZona((string) $argumentos[4]),
             ];
         }
 
         throw new InvalidArgumentException('Los datos de la ubicación son inválidos.');
+    }
+
+    private static function normalizarEstadoZona(string $estado): string
+    {
+        return str_replace('Inactivo', 'Desactivo', $estado);
     }
 
     // Rechaza identificadores o coordenadas fuera de los rangos geográficos válidos.
