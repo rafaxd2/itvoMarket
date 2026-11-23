@@ -32,3 +32,41 @@ function validarContrasenaSegura(string $contrasena): string
 
     return '';
 }
+
+function validarNombreProducto(string $nombre): string
+{
+    if (trim($nombre) === '') {
+        return 'El nombre del producto es obligatorio.';
+    }
+
+    return '';
+}
+
+function validarPrecioProducto(mixed $precio): string
+{
+    if (!is_numeric($precio) || !is_finite((float) $precio) || (float) $precio <= 0) {
+        return 'El precio debe ser un número positivo.';
+    }
+
+    return '';
+}
+
+function validarFormatoImagenProducto(string $nombreArchivo): bool
+{
+    $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+
+    return in_array($extension, ['jpg', 'jpeg', 'png'], true);
+}
+
+function validarImagenProducto(?array $archivo): string
+{
+    if ($archivo === null || ($archivo['error'] ?? null) !== UPLOAD_ERR_OK) {
+        return 'Debes seleccionar una imagen en formato jpg o png.';
+    }
+
+    if (!validarFormatoImagenProducto((string) ($archivo['name'] ?? ''))) {
+        return 'La imagen debe tener formato jpg o png.';
+    }
+
+    return '';
+}

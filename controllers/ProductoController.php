@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/Producto.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/CatalogoController.php';
 require_once __DIR__ . '/../services/AlmacenImagenes.php';
+require_once __DIR__ . '/../helpers/Validaciones.php';
 
 // Controlador encargado de publicar productos desde la cuenta de un vendedor.
 class ProductoController
@@ -44,8 +45,9 @@ class ProductoController
             $categoriasDisponibles[(string) $categoria['id_categoria']] = true;
         }
 
-        if ($nombre === '') {
-            $errores['nombre'] = 'El nombre del producto es obligatorio.';
+        $errorNombre = validarNombreProducto($nombre);
+        if ($errorNombre !== '') {
+            $errores['nombre'] = $errorNombre;
         }
 
         if ($idCategoria === '' || !isset($categoriasDisponibles[$idCategoria])) {
@@ -54,14 +56,16 @@ class ProductoController
 
         if ($precio === '') {
             $errores['precio'] = 'El precio es obligatorio.';
-        } elseif (!is_numeric($precio) || !is_finite((float) $precio) || (float) $precio <= 0) {
-            $errores['precio'] = 'El precio debe ser un número positivo.';
+        } else {
+            $errorPrecio = validarPrecioProducto($precio);
+            if ($errorPrecio !== '') {
+                $errores['precio'] = $errorPrecio;
+            }
         }
 
-        if (!isset($_FILES['imagen']) || $_FILES['imagen']['error'] !== UPLOAD_ERR_OK) {
-            $errores['imagen'] = 'Debes seleccionar una imagen en formato jpg o png.';
-        } elseif (!Producto::validarFormatoImagen((string) $_FILES['imagen']['name'])) {
-            $errores['imagen'] = 'La imagen debe tener formato jpg o png.';
+        $errorImagen = validarImagenProducto($_FILES['imagen'] ?? null);
+        if ($errorImagen !== '') {
+            $errores['imagen'] = $errorImagen;
         }
 
         if (!empty($errores)) {

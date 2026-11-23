@@ -29,4 +29,38 @@ final class ValidacionesTest extends ModeloTestCase
             self::assertNull(normalizarCorreoGmail($correo), 'Se aceptó el correo inválido: ' . $correo);
         }
     }
+
+    public function testValidaNombreDeProductoSinCambiarLaReglaDeObligatoriedad(): void
+    {
+        self::assertSame('', validarNombreProducto('Producto válido'));
+        self::assertSame('El nombre del producto es obligatorio.', validarNombreProducto('   '));
+    }
+
+    public function testValidaPrecioPositivoFinitoSinAgregarLimitesNuevos(): void
+    {
+        self::assertSame('', validarPrecioProducto('12.50'));
+        self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('0'));
+        self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('no es número'));
+        self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('1e9999'));
+    }
+
+    public function testValidaFormatoYEstadoDeLaImagenDeProducto(): void
+    {
+        self::assertSame('', validarImagenProducto([
+            'error' => UPLOAD_ERR_OK,
+            'name' => 'producto.JPG',
+        ]));
+        self::assertSame(
+            'Debes seleccionar una imagen en formato jpg o png.',
+            validarImagenProducto(null)
+        );
+        self::assertSame(
+            'Debes seleccionar una imagen en formato jpg o png.',
+            validarImagenProducto(['error' => UPLOAD_ERR_NO_FILE, 'name' => ''])
+        );
+        self::assertSame(
+            'La imagen debe tener formato jpg o png.',
+            validarImagenProducto(['error' => UPLOAD_ERR_OK, 'name' => 'producto.gif'])
+        );
+    }
 }

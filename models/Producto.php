@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/Validaciones.php';
 
 // Clase que gestiona las operaciones de productos publicados por los vendedores.
 class Producto
@@ -13,15 +14,17 @@ class Producto
         $datos = self::normalizarDatosProducto($argumentos);
         $datos['nombre'] = trim($datos['nombre']);
 
-        if ($datos['nombre'] === '') {
-            throw new InvalidArgumentException('El nombre del producto es obligatorio.');
+        $errorNombre = validarNombreProducto($datos['nombre']);
+        if ($errorNombre !== '') {
+            throw new InvalidArgumentException($errorNombre);
         }
 
-        if (!is_numeric($datos['precio']) || !is_finite((float) $datos['precio']) || (float) $datos['precio'] <= 0) {
-            throw new InvalidArgumentException('El precio debe ser un número positivo.');
+        $errorPrecio = validarPrecioProducto($datos['precio']);
+        if ($errorPrecio !== '') {
+            throw new InvalidArgumentException($errorPrecio);
         }
 
-        if ($datos['imagen_producto'] !== '' && !self::validarFormatoImagen($datos['imagen_producto'])) {
+        if ($datos['imagen_producto'] !== '' && !validarFormatoImagenProducto($datos['imagen_producto'])) {
             throw new InvalidArgumentException('La imagen debe tener formato jpg o png.');
         }
 
@@ -141,9 +144,7 @@ class Producto
     // Comprueba que el nombre del archivo tenga una extensión de imagen permitida.
     public static function validarFormatoImagen(string $nombreArchivo): bool
     {
-        $extension = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
-
-        return in_array($extension, ['jpg', 'jpeg', 'png'], true);
+        return validarFormatoImagenProducto($nombreArchivo);
     }
 
     // Lista las categorías disponibles para el formulario de publicación.
