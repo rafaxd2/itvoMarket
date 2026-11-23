@@ -103,6 +103,45 @@ final class AlmacenImagenesTest extends TestCase
         self::assertFalse(AlmacenImagenes::esClaveProductoSegura('producto_../../secreto.png'));
     }
 
+    public function testEliminarImagenProductoBorraUnaRutaLocalDentroDeUploads(): void
+    {
+        $directorioUploads = dirname(__DIR__) . '/public/assets/uploads';
+        if (!is_dir($directorioUploads)) {
+            self::assertTrue(mkdir($directorioUploads, 0775, true));
+        }
+
+        $nombreArchivo = 'producto_prueba_' . bin2hex(random_bytes(6)) . '.jpg';
+        $rutaArchivo = $directorioUploads . DIRECTORY_SEPARATOR . $nombreArchivo;
+        self::assertNotFalse(file_put_contents($rutaArchivo, 'imagen de prueba'));
+
+        try {
+            self::assertTrue(eliminarImagenProducto('assets/uploads/' . $nombreArchivo));
+            self::assertFileDoesNotExist($rutaArchivo);
+        } finally {
+            if (is_file($rutaArchivo)) {
+                unlink($rutaArchivo);
+            }
+        }
+    }
+
+    public function testEliminarImagenProductoRechazaRutasLocalesConTraversal(): void
+    {
+        self::assertFalse(eliminarImagenProducto('assets/uploads/../../config/database.php'));
+        self::assertFalse(eliminarImagenProducto('assets/uploads/subdirectorio/producto.jpg'));
+    }
+
+    public function testEliminarImagenProductoNoInterrumpeCuandoNoHayImagen(): void
+    {
+        self::assertTrue(eliminarImagenProducto(null));
+        self::assertTrue(eliminarImagenProducto(''));
+    }
+
+    public function testEliminarImagenS3RechazaClavesInvalidasSinHacerSolicitudes(): void
+    {
+        self::assertFalse(AlmacenImagenes::eliminar('../producto.jpg'));
+        self::assertFalse(AlmacenImagenes::eliminar('productos/producto_123.jpg'));
+    }
+
     public function testUrlCompletaDeObjetoS3AnteriorUsaLaRutaPrivada(): void
     {
         $nombresVariables = ['S3_URL_PUBLICA', 'S3_ENDPOINT'];

@@ -141,6 +141,36 @@ final class AlmacenImagenes
         ];
     }
 
+    public static function eliminar(string $claveArchivo, ?array $configuracion = null): bool
+    {
+        if (!self::esClaveProductoSegura($claveArchivo)) {
+            error_log('No fue posible eliminar la imagen de S3: la clave no es válida.');
+            return false;
+        }
+
+        try {
+            $configuracion = $configuracion ?? self::obtenerConfiguracion();
+            $resultado = self::enviarSolicitudS3(
+                'DELETE',
+                'productos/' . $claveArchivo,
+                '',
+                [],
+                '',
+                $configuracion
+            );
+
+            if ($resultado['codigo'] >= 200 && $resultado['codigo'] < 300) {
+                return true;
+            }
+
+            error_log('No fue posible eliminar la imagen de S3.');
+            return false;
+        } catch (Throwable $excepcion) {
+            error_log('No fue posible eliminar la imagen de S3.');
+            return false;
+        }
+    }
+
     // Valida que la clave corresponda a un archivo de producto sin rutas ni segmentos relativos.
     public static function esClaveProductoSegura(string $claveArchivo): bool
     {
@@ -355,4 +385,53 @@ final class AlmacenImagenes
         return 'Error de ' . $operacion . ' en S3 (HTTP ' . $resultado['codigo'] . ')'
             . ($detalle !== '' ? ': ' . substr($detalle, 0, 2000) : '.');
     }
+}
+
+function eliminarImagenProducto(?string $rutaOUrl): bool
+{
+    $ruta = trim((string) $rutaOUrl);
+    if ($ruta === '') {
+        return true;
+    }
+
+    $prefijoLocal = 'assets/uploads/';
+    if (str_starts_with($ruta, $prefijoLocal)) {
+        $nombreArchivo = substr($ruta, strlen($prefijoLocal));
+        if (
+            $nombreArchivo === ''
+            || str_contains($nombreArchivo, '..')
+            || str_contains($nombreArchivo, '/')
+            || str_contains($nombreArchivo, '\\')
+        ) {
+            error_log('No fue posible eliminar la imagen local: la ruta no es válida.');
+            return false;
+        }
+
+        $directorioUploads = realpath(__DIR__ . '/../public/assets/uploads');
+        if ($directorioUploads === false) {
+            error_log('No fue posible eliminar la imagen local.');
+            return false;
+        }
+
+        $rutaArchivo = realpath($directorioUploads . DIRECTORY_SEPARATOR . $nombreArchivo);
+        $prefijoSeguro = rtrim($directorioUploads, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (
+            $rutaArchivo === false
+            || !str_starts_with($rutaArchivo, $prefijoSeguro)
+            || !is_file($rutaArchivo)
+            || !@unlink($rutaArchivo)
+        ) {
+            error_log('No fue posible eliminar la imagen local.');
+            return false;
+        }
+
+        return true;
+    }
+
+    if (AlmacenImagenes::esClaveProductoSegura($ruta)) {
+        return AlmacenImagenes::eliminar($ruta);
+    }
+
+    error_log('No fue posible eliminar la imagen: la ruta no es válida.');
+    return false;
 }
