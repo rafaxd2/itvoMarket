@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/database.php';
 // Clase que gestiona la ubicación geográfica y el estado de visibilidad de cada vendedor.
 class ZonaVenta
 {
-    // Guarda o actualiza la ubicación del vendedor y el estado de publicación de su zona.
+    // Guarda la zona con 'Activo' o 'Desactivo'; HU-03 normaliza 'Inactivo' a 'Desactivo'.
     public static function actualizarUbicacion(...$argumentos): bool
     {
         $datos = self::normalizarDatosZona($argumentos);
