@@ -6,6 +6,7 @@ require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/ProductoController.php';
 require_once __DIR__ . '/../controllers/UbicacionController.php';
 require_once __DIR__ . '/../controllers/CatalogoController.php';
+require_once __DIR__ . '/../controllers/DisponibilidadController.php';
 
 $controlador = new AuthController();
 $accion = $_GET['accion'] ?? 'login';
@@ -80,6 +81,14 @@ switch ($accion) {
     case 'guardarUbicacion':
         AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
         (new UbicacionController())->guardar();
+        break;
+    case 'disponibilidad':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new DisponibilidadController())->mostrar();
+        break;
+    case 'actualizar_disponibilidad':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new DisponibilidadController())->actualizar();
         break;
     case 'mapa':
         header('Location: panel.php?rol=comprador');

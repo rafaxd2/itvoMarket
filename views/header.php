@@ -14,6 +14,7 @@ $esVendedor = $rolActual === 'vendedor';
             <div class="d-flex align-items-center gap-2 nav-pills">
                 <a class="nav-link <?= in_array($accionActual, ['publicar', 'procesarpublicacion'], true) ? 'active' : ''; ?>" href="index.php?accion=publicar">Publicar producto</a>
                 <a class="nav-link <?= in_array($accionActual, ['ubicacion', 'guardarubicacion'], true) ? 'active' : ''; ?>" href="index.php?accion=ubicacion">Mi ubicación</a>
+                <a class="nav-link <?= in_array($accionActual, ['disponibilidad', 'actualizar_disponibilidad'], true) ? 'active' : ''; ?>" href="index.php?accion=disponibilidad">Mi disponibilidad</a>
             </div>
         <?php else: ?>
             <div class="d-flex align-items-center gap-2 nav-pills">
