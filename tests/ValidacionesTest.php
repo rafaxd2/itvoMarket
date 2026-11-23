@@ -36,12 +36,16 @@ final class ValidacionesTest extends ModeloTestCase
         self::assertSame('El nombre del producto es obligatorio.', validarNombreProducto('   '));
     }
 
-    public function testValidaPrecioPositivoFinitoSinAgregarLimitesNuevos(): void
+    public function testValidaPrecioPositivoFinitoDentroDelMaximoYConDosDecimales(): void
     {
         self::assertSame('', validarPrecioProducto('12.50'));
+        self::assertSame('', validarPrecioProducto('0.01'));
+        self::assertSame('', validarPrecioProducto('9999.99'));
         self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('0'));
         self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('no es número'));
         self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('1e9999'));
+        self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('10000'));
+        self::assertSame('El precio debe ser un número positivo.', validarPrecioProducto('12.345'));
     }
 
     public function testValidaFormatoYEstadoDeLaImagenDeProducto(): void

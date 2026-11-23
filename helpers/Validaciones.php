@@ -48,6 +48,14 @@ function validarPrecioProducto(mixed $precio): string
         return 'El precio debe ser un número positivo.';
     }
 
+    $precioTexto = is_string($precio) ? trim($precio) : (string) $precio;
+    if (
+        preg_match('/\A\+?\d+(?:\.\d{1,2})?\z/', $precioTexto) !== 1
+        || (float) $precio > 9999.99
+    ) {
+        return 'El precio debe ser un número positivo.';
+    }
+
     return '';
 }
 
