@@ -7,6 +7,7 @@ require_once __DIR__ . '/../controllers/ProductoController.php';
 require_once __DIR__ . '/../controllers/UbicacionController.php';
 require_once __DIR__ . '/../controllers/CatalogoController.php';
 require_once __DIR__ . '/../controllers/DisponibilidadController.php';
+require_once __DIR__ . '/../controllers/CatalogoVendedorController.php';
 
 $controlador = new AuthController();
 $accion = $_GET['accion'] ?? 'login';
@@ -89,6 +90,41 @@ switch ($accion) {
     case 'actualizar_disponibilidad':
         AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
         (new DisponibilidadController())->actualizar();
+        break;
+    case 'mis_productos':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        (new CatalogoVendedorController())->misProductos();
+        break;
+    case 'editar_producto':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $controladorCatalogoVendedor = new CatalogoVendedorController();
+        if ($metodo === 'GET') {
+            $controladorCatalogoVendedor->mostrarEdicion();
+        } elseif ($metodo === 'POST') {
+            $controladorCatalogoVendedor->guardarEdicion();
+        } else {
+            http_response_code(405);
+            header('Allow: GET, POST');
+        }
+        break;
+    case 'confirmar_eliminar':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+            http_response_code(405);
+            header('Allow: GET');
+            break;
+        }
+        (new CatalogoVendedorController())->confirmarEliminar();
+        break;
+    case 'eliminar_producto':
+        AuthController::requerirRol('vendedor', 'panel.php?rol=comprador&mensaje=solo_vendedores');
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            header('Allow: POST');
+            break;
+        }
+        (new CatalogoVendedorController())->eliminar();
         break;
     case 'mapa':
         header('Location: panel.php?rol=comprador');
