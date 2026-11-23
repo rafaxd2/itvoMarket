@@ -28,6 +28,16 @@ final class ProductoTest extends ModeloTestCase
             )'
         );
         $this->conexion->exec(
+            'CREATE TABLE calificacion_producto (
+                id_calificacion_producto INTEGER PRIMARY KEY AUTOINCREMENT,
+                id_usuario INTEGER NOT NULL,
+                id_producto INTEGER NOT NULL,
+                puntuacion INTEGER NOT NULL,
+                comentario TEXT NULL,
+                fecha TEXT NULL
+            )'
+        );
+        $this->conexion->exec(
             'CREATE TABLE usuario (
                 id_usuario INTEGER PRIMARY KEY,
                 nombre TEXT NOT NULL
@@ -220,6 +230,111 @@ final class ProductoTest extends ModeloTestCase
     public function testDetalleCatalogoRechazaIdNoNumerico(): void
     {
         self::assertNull(Producto::buscarDetalleCatalogo('no-es-un-id'));
+    }
+
+    public function testListarPorVendedorIncluyeCategoriaYNoDevuelveProductosAjeno(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+        $this->conexion->exec(
+            "INSERT INTO productos (
+                id_producto, id_vendedor, id_categoria, id_estado, id_condicion,
+                id_estado_ubicacion, nombre, descripcion_producto, precio, imagen_producto
+            ) VALUES (2, 2, 2, 1, 1, 1, 'Agua', 'Horchata', 15, '')"
+        );
+
+        $productos = Producto::listarPorVendedor(1);
+
+        self::assertCount(1, $productos);
+        self::assertSame('Comida', $productos[0]['categoria']);
+    }
+
+    public function testObtenerPorIdYVendedorRequiereCoincidenciaDePropietario(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+
+        self::assertSame('Torta', Producto::obtenerPorIdYVendedor(1, 1)['nombre']);
+        self::assertNull(Producto::obtenerPorIdYVendedor(1, 2));
+        self::assertNull(Producto::obtenerPorIdYVendedor(0, 1));
+    }
+
+    public function testActualizarProductoSoloModificaLosCamposPermitidosDelPropietario(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+
+        self::assertTrue(Producto::actualizarProducto(1, 1, [
+            'nombre' => 'Torta nueva',
+            'precio' => '42.50',
+            'descripcion_producto' => 'Frijol y queso',
+            'id_categoria' => 2,
+            'imagen_producto' => 'assets/uploads/nueva.jpg',
+        ]));
+
+        $producto = $this->conexion->query('SELECT * FROM productos WHERE id_producto = 1')->fetch();
+        self::assertSame('Torta nueva', $producto['nombre']);
+        self::assertSame(42.5, (float) $producto['precio']);
+        self::assertSame(2, (int) $producto['id_categoria']);
+        self::assertSame('assets/uploads/nueva.jpg', $producto['imagen_producto']);
+        self::assertSame(1, (int) $producto['id_estado']);
+        self::assertSame(1, (int) $producto['id_condicion']);
+        self::assertSame(1, (int) $producto['id_estado_ubicacion']);
+    }
+
+    public function testActualizarProductoRechazaCategoriaInexistenteYOtroPropietario(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+        $datos = [
+            'nombre' => 'Torta nueva',
+            'precio' => '42.50',
+            'descripcion_producto' => 'Nueva',
+            'id_categoria' => 1,
+            'imagen_producto' => '',
+        ];
+
+        self::assertFalse(Producto::actualizarProducto(1, 2, $datos));
+        $datos['id_categoria'] = 999;
+        self::assertFalse(Producto::actualizarProducto(1, 1, $datos));
+        self::assertSame('Torta', $this->conexion->query('SELECT nombre FROM productos')->fetchColumn());
+    }
+
+    public function testEliminarProductoBorraCalificacionesYProductoEnLaMismaOperacion(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+        $this->conexion->exec(
+            "INSERT INTO calificacion_producto (id_usuario, id_producto, puntuacion)
+             VALUES (1, 1, 5)"
+        );
+
+        self::assertTrue(Producto::eliminarProducto(1, 1));
+        self::assertSame(0, (int) $this->conexion->query('SELECT COUNT(*) FROM productos')->fetchColumn());
+        self::assertSame(0, (int) $this->conexion->query('SELECT COUNT(*) FROM calificacion_producto')->fetchColumn());
+    }
+
+    public function testEliminarProductoNoBorraPublicacionDeOtroVendedor(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+
+        self::assertFalse(Producto::eliminarProducto(1, 2));
+        self::assertSame(1, (int) $this->conexion->query('SELECT COUNT(*) FROM productos')->fetchColumn());
+    }
+
+    public function testEliminarProductoRevierteCalificacionesSiFallaElBorradoDelProducto(): void
+    {
+        $this->insertarProductoCatalogo(1, 'Torta', 'Frijol', 1);
+        $this->conexion->exec(
+            "INSERT INTO calificacion_producto (id_usuario, id_producto, puntuacion)
+             VALUES (1, 1, 5)"
+        );
+        $this->conexion->exec(
+            "CREATE TRIGGER rechazar_eliminacion_producto
+             BEFORE DELETE ON productos
+             BEGIN
+                 SELECT RAISE(FAIL, 'error de prueba');
+             END"
+        );
+
+        self::assertFalse(Producto::eliminarProducto(1, 1));
+        self::assertSame(1, (int) $this->conexion->query('SELECT COUNT(*) FROM productos')->fetchColumn());
+        self::assertSame(1, (int) $this->conexion->query('SELECT COUNT(*) FROM calificacion_producto')->fetchColumn());
     }
 
     private function insertarProductoCatalogo(int $id, string $nombre, string $descripcion, int $idCategoria): void

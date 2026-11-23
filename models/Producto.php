@@ -54,11 +54,144 @@ class Producto
     {
         $conexion = obtenerConexionBaseDatos();
         $consulta = $conexion->prepare(
-            'SELECT * FROM productos WHERE id_vendedor = :id_vendedor ORDER BY id_producto DESC'
+            'SELECT p.*, c.tipo_categoria AS categoria
+             FROM productos p
+             LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+             WHERE p.id_vendedor = :id_vendedor
+             ORDER BY p.id_producto DESC'
         );
         $consulta->execute([':id_vendedor' => $idVendedor]);
 
         return $consulta->fetchAll();
+    }
+
+    public static function obtenerPorIdYVendedor(int $idProducto, int $idVendedor): ?array
+    {
+        if ($idProducto <= 0 || $idVendedor <= 0) {
+            return null;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+        $consulta = $conexion->prepare(
+            'SELECT p.*, c.tipo_categoria AS categoria
+             FROM productos p
+             LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+             WHERE p.id_producto = :id_producto AND p.id_vendedor = :id_vendedor
+             LIMIT 1'
+        );
+        $consulta->execute([
+            ':id_producto' => $idProducto,
+            ':id_vendedor' => $idVendedor,
+        ]);
+        $producto = $consulta->fetch();
+
+        return $producto !== false ? $producto : null;
+    }
+
+    public static function actualizarProducto(int $idProducto, int $idVendedor, array $datos): bool
+    {
+        if ($idProducto <= 0 || $idVendedor <= 0) {
+            return false;
+        }
+
+        try {
+            $conexion = obtenerConexionBaseDatos();
+            $consultaCategoria = $conexion->prepare(
+                'SELECT id_categoria FROM categorias WHERE id_categoria = :id_categoria LIMIT 1'
+            );
+            $consultaCategoria->execute([
+                ':id_categoria' => (int) ($datos['id_categoria'] ?? 0),
+            ]);
+            if ($consultaCategoria->fetchColumn() === false) {
+                return false;
+            }
+
+            $consultaExistencia = $conexion->prepare(
+                'SELECT id_producto FROM productos WHERE id_producto = :id_producto AND id_vendedor = :id_vendedor LIMIT 1'
+            );
+            $consultaExistencia->execute([
+                ':id_producto' => $idProducto,
+                ':id_vendedor' => $idVendedor,
+            ]);
+            if ($consultaExistencia->fetchColumn() === false) {
+                return false;
+            }
+
+            $consulta = $conexion->prepare(
+                'UPDATE productos
+                 SET nombre = :nombre,
+                     precio = :precio,
+                     descripcion_producto = :descripcion_producto,
+                     id_categoria = :id_categoria,
+                     imagen_producto = :imagen_producto
+                 WHERE id_producto = :id_producto AND id_vendedor = :id_vendedor'
+            );
+            $consulta->execute([
+                ':nombre' => (string) ($datos['nombre'] ?? ''),
+                ':precio' => $datos['precio'] ?? 0,
+                ':descripcion_producto' => (string) ($datos['descripcion_producto'] ?? ''),
+                ':id_categoria' => (int) $datos['id_categoria'],
+                ':imagen_producto' => (string) ($datos['imagen_producto'] ?? ''),
+                ':id_producto' => $idProducto,
+                ':id_vendedor' => $idVendedor,
+            ]);
+
+            return true;
+        } catch (PDOException $excepcion) {
+            error_log('No fue posible actualizar el producto.');
+            return false;
+        }
+    }
+
+    public static function eliminarProducto(int $idProducto, int $idVendedor): bool
+    {
+        if ($idProducto <= 0 || $idVendedor <= 0) {
+            return false;
+        }
+
+        $conexion = obtenerConexionBaseDatos();
+
+        try {
+            $conexion->beginTransaction();
+
+            $consultaExistencia = $conexion->prepare(
+                'SELECT id_producto FROM productos WHERE id_producto = :id_producto AND id_vendedor = :id_vendedor LIMIT 1'
+            );
+            $consultaExistencia->execute([
+                ':id_producto' => $idProducto,
+                ':id_vendedor' => $idVendedor,
+            ]);
+            if ($consultaExistencia->fetchColumn() === false) {
+                $conexion->rollBack();
+                return false;
+            }
+
+            $consultaCalificaciones = $conexion->prepare(
+                'DELETE FROM calificacion_producto WHERE id_producto = :id_producto'
+            );
+            $consultaCalificaciones->execute([':id_producto' => $idProducto]);
+
+            $consultaProducto = $conexion->prepare(
+                'DELETE FROM productos WHERE id_producto = :id_producto AND id_vendedor = :id_vendedor'
+            );
+            $consultaProducto->execute([
+                ':id_producto' => $idProducto,
+                ':id_vendedor' => $idVendedor,
+            ]);
+            if ($consultaProducto->rowCount() === 0) {
+                $conexion->rollBack();
+                return false;
+            }
+
+            $conexion->commit();
+            return true;
+        } catch (PDOException $excepcion) {
+            if ($conexion->inTransaction()) {
+                $conexion->rollBack();
+            }
+            error_log('No fue posible eliminar el producto.');
+            return false;
+        }
     }
 
     public static function listarCatalogo(?string $texto, ?int $idCategoria): array
